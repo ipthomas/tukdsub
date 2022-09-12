@@ -9,10 +9,11 @@ import (
 	"strings"
 	"text/template"
 	"tukxdwcre/src/tukcnst"
-	dbint "tukxdwcre/src/tukdbint"
-	"tukxdwcre/src/tukhttp"
-	pixm "tukxdwcre/src/tukpixm"
-	util "tukxdwcre/src/tukutil"
+
+	dbint "github.com/ipthomas/tukdbint"
+	"github.com/ipthomas/tukhttp"
+	pixm "github.com/ipthomas/tukpixm"
+	util "github.com/ipthomas/tukutil"
 )
 
 var (
