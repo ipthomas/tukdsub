@@ -8,7 +8,8 @@ import (
 	"log"
 	"strings"
 	"text/template"
-	"tukxdwcre/src/tukcnst"
+
+	"github.com/ipthomas/tukcnst"
 
 	dbint "github.com/ipthomas/tukdbint"
 	"github.com/ipthomas/tukhttp"
@@ -285,7 +286,7 @@ func (i *DSUBEvent) NewEvent() error {
 				if pdq.Count == 0 {
 					return errors.New("no patient returned for pid " + i.XdsPid)
 				}
-				if len(pdq.Response[0].NHSID) != 10 {
+				if len(pdq.Patients[0].NHSID) != 10 {
 					return errors.New("no valid nhs id returned in pix query for pid " + i.XdsPid)
 				}
 				for _, dbsub := range tukdbSubs.Subscriptions {
@@ -293,7 +294,7 @@ func (i *DSUBEvent) NewEvent() error {
 						log.Printf("Creating event for %s %s Subsription for Broker Ref %s", dbsub.Pathway, dbsub.Expression, dbsub.BrokerRef)
 						i.Pathway = dbsub.Pathway
 						i.Topic = dbsub.Topic
-						i.NhsId = pdq.Response[0].NHSID
+						i.NhsId = pdq.Patients[0].NHSID
 						tukevs := dbint.Events{Action: "insert"}
 						tukevs.Events = append(tukevs.Events, i.NewDBEvent())
 						if err = dbint.NewDBEvent(&tukevs); err == nil {
