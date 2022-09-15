@@ -30,23 +30,27 @@ var (
 // TemplateFuncMap returns a functionMap of tukutils for use in templates
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"dtday":         Tuk_Day,
-		"dtmonth":       Tuk_Month,
-		"dtyear":        Tuk_Year,
-		"mapval":        GetCodeSystemVal,
-		"prettytime":    PrettyTime,
-		"newuuid":       NewUuid,
-		"newid":         Newid,
-		"tuktime":       Time_Now,
-		"isafternow":    IsAfterNow,
-		"duration":      GetDuration,
-		"durationsince": GetDurationSince,
-		"hasexpired":    OHT_HasExpired,
-		"completedate":  OHT_CompleteByDate,
+		"dtday":          Tuk_Day,
+		"dtmonth":        Tuk_Month,
+		"dtyear":         Tuk_Year,
+		"mapval":         GetCodeSystemVal,
+		"prettytime":     PrettyTime,
+		"newuuid":        NewUuid,
+		"newid":          Newid,
+		"tuktime":        Time_Now,
+		"simpledatetime": SimpleDateTime,
+		"isafternow":     IsAfterNow,
+		"duration":       GetDuration,
+		"durationsince":  GetDurationSince,
+		"hasexpired":     OHT_HasExpired,
+		"completedate":   OHT_CompleteByDate,
 	}
 }
 func SetResponseHeaderServer(tukServerName string) {
 	ServerName = tukServerName
+}
+func SimpleDateTime() string {
+	return Tuk_Year() + Tuk_Month() + Tuk_Day() + Tuk_Hour() + Tuk_Min() + Tuk_Sec()
 }
 
 // SplitXDWKey takes a string input (xdwkey) and returns the pathway and nhs id for the xdw

@@ -1,47 +1,82 @@
 # tukpixm
-tukpixm provides a golang implementtion of an IHE PIXm PDQ Client
+tukpixm provides a golang implementtion of IHE PIXm, IHE PIXv3 and IHE PDQv3 Consumer clients
 
-There is currently no authentication implemented. The func (i *PIXmQuery) newRequest() error is used to handle the http request/response and should be amended according to your authentication requirements
+There is currently no authentication implemented. The github.com/ipthomas/tukhttp package is used to handle the http request/response and should be amended according to your authentication requirements
 
-Struct PIXmQuery implements the tukpixm.PDQ interface
+Struct PDQQuery implements the tukpixm.PDQ interface
 
-	type PIXmQuery struct {
-		Count        int          `json:"count"`
-		PID          string       `json:"pid"`
-		PIDOID       string       `json:"pidoid"`
-		PIX_URL      string       `json:"pixurl"`
-		NHS_OID      string       `json:"nhsoid"`
-		Region_OID   string       `json:"regionoid"`
-		Timeout      int64        `json:"timeout"`
-		StatusCode   int          `json:"statuscode"`
-		Response     []byte       `json:"response"`
-		PIXmResponse PIXmResponse `json:"pixmresponse"`
-		Patients     []PIXPatient `json:"patients"`
+	type PDQQuery struct {
+	Server     string
+	MRN_ID     string
+	MRN_OID    string
+	NHS_ID     string
+	NHS_OID    string
+	REG_ID     string
+	REG_OID    string
+	Server_URL string
+	Timeout    int64
+	Used_PID   string
+	Request    []byte
+	Response   []byte
+	StatusCode int
+	Count      int
+	PDQ_ID     string
+	PDQ_OID    string
+	Patients   []PIXPatient `json:"patients"`
+}
+	Server must be set to either "pixm" to perform a IHE PIXm query or "pixv3" to perform an IHE PIXv3 query or "pdqv3" to perform an IHE PDQv3 query. The github.com/ipthomas/tukcnst provides constants for each of the valid Server values i.e. tukcnst.PIXm, tukcnst.PIXv3, tukcnst.PDQv3, or you can just use strings!
+	
+	A patient identifier is required for use in the PDQ. This can be either the MRN id along with the associated OID or the NHS ID (if no NHS OID is provided the NHS assigned OID is used) or the XDS regional ID
+
+	 The REG_OID is the Regional/XDS OID and is required
+	 
+	 Server_URL is the PIXm WS end point and is required.
+
+	 Timeout is the http context timeout in seconds and is optional. Default is 5 secs
+
+	 PDQ_ID will be set to the ID used for the query
+	 PDQ_OID will be set to the OID used for the query
+	 
+	 Count will equal the number of patients found matching the query
+	 Response will contain the PIXm response in []byte format
+	 StatusCode will contain the http response header statuscode
+	 []Patients will contain an array of PIXPatient structs containing all matched patients. Hopefully just 1 !!
+
+	type PIXPatient struct {
+		PIDOID     string `json:"pidoid"`
+		PID        string `json:"pid"`
+		REGOID     string `json:"regoid"`
+		REGID      string `json:"regid"`
+		NHSOID     string `json:"nhsoid"`
+		NHSID      string `json:"nhsid"`
+		GivenName  string `json:"givenname"`
+		FamilyName string `json:"familyname"`
+		Gender     string `json:"gender"`
+		BirthDate  string `json:"birthdate"`
+		Street     string `json:"street"`
+		Town       string `json:"town"`
+		City       string `json:"city"`
+		State      string `json:"state"`
+		Country    string `json:"country"`
+		Zip        string `json:"zip"`
 	}
 
-	 PID is the MRN or NHS ID or Regional/xds ID and is required
-	 Region_OID is the Regional/XDS OID and is required
-	 PIX_URL is the PIXm WS end point and is required.
-	 PID_OID is required if the PID is not an NHS ID. If pid length = 10 and no PID_OID is provided, the pid is assumed to be a NHS ID and the PID_OID is set to the NHS offical NHS ID OID (2.16.840.1.113883.2.1.4.1)
-	 Timeout sets the http context timeout in seconds and is optional. Default is 5 secs
-	 NHS_OID is optional. Default is 2.16.840.1.113883.2.1.4.1
-	 Count will be set from the pixm response to the number of patients found matching the query
-	 Response will contain the PIXm response in []byte format
-	 PIXmResponse will contain the initialised PIXmResponse struc from the Response []byte
-	 StatusCode will be set from the PIXm Server http response header statuscode
-	 []Patients is any array of PIXPatient structs containing all matched patients. Hopefully just 1 !!
-
 	Example usage:
-		pdq := tukpixm.PIXmQuery{
-			PID:        "9999999468",
-			Region_OID: "2.16.840.1.113883.2.1.3.31.2.1.1",
-			PIX_URL:    "http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient",
-		}
-		if err = tukpixm.PDQ(&pdq); err == nil {
+		pdq := tukpixm.PDQQuery{
+		Server:     tukcnst.PIXm
+		NHS_ID:     "1111111111",
+		REG_OID:    "2.16.840.1.113883.2.1.3.31.2.1.1",
+		Server_URL: "http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient",
+	}
+	if err = tukpixm.PDQ(&pdq); err == nil {
+		if pdq.Count == 1 {
 			log.Printf("Patient %s %s is registered", pdq.Patients[0].GivenName, pdq.Patients[0].FamilyName)
 		} else {
-			log.Println(err.Error())
+			log.Printf("Found %v Patients", pdq.Count)
 		}
+	} else {
+		log.Println(err.Error())
+	}
 
 	Running the above example produces the following Log output:
 

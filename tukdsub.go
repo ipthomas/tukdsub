@@ -273,12 +273,11 @@ func (i *DSUBEvent) NewEvent() error {
 			log.Printf("TUK Event Subscriptions Count : %v", tukdbSubs.Count)
 			if tukdbSubs.Count > 0 {
 				log.Printf("Obtaining NHS ID. Using %s", i.XdsPid+":"+i.Regional_OID)
-				pdq := pixm.PIXmQuery{
-					PID:        i.XdsPid,
-					PIDOID:     i.Regional_OID,
-					PIX_URL:    getCodeSystemVal(tukcnst.PIX_URL),
-					NHS_OID:    getCodeSystemVal(tukcnst.NHS_OID),
-					Region_OID: i.Regional_OID,
+				pdq := pixm.PDQQuery{
+					Server:     tukcnst.PIXm,
+					REG_ID:     i.XdsPid,
+					Server_URL: getCodeSystemVal(tukcnst.PIX_URL),
+					REG_OID:    i.Regional_OID,
 				}
 				if err = pixm.PDQ(&pdq); err != nil {
 					return err
