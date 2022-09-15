@@ -21,11 +21,15 @@ import (
 )
 
 var (
-	ServerName, _ = os.Hostname()
-	SeedRoot      = "1.2.40.0.13.1.1.3542466645."
-	IdSeed        = getIdIncrementSeed(5)
-	CodeSystem    = make(map[string]string)
+	ServerName = ""
+	SeedRoot   = "1.2.40.0.13.1.1.3542466645."
+	IdSeed     = getIdIncrementSeed(5)
+	CodeSystem = make(map[string]string)
 )
+
+func init() {
+	ServerName, _ = os.Hostname()
+}
 
 // TemplateFuncMap returns a functionMap of tukutils for use in templates
 func TemplateFuncMap() template.FuncMap {
@@ -46,9 +50,7 @@ func TemplateFuncMap() template.FuncMap {
 		"completedate":   OHT_CompleteByDate,
 	}
 }
-func SetResponseHeaderServer(tukServerName string) {
-	ServerName = tukServerName
-}
+
 func SimpleDateTime() string {
 	return Tuk_Year() + Tuk_Month() + Tuk_Day() + Tuk_Hour() + Tuk_Min() + Tuk_Sec()
 }

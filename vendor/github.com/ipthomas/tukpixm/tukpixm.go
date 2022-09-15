@@ -754,10 +754,10 @@ func (i *PDQQuery) setPDQ_ID() error {
 func (i *PDQQuery) getPatient() error {
 	var tmplt *template.Template
 	var err error
-	var b bytes.Buffer
 	switch i.Server {
 	case cnst.PIXv3:
 		if tmplt, err = template.New(cnst.PIXv3).Funcs(util.TemplateFuncMap()).Parse(PIX_V3_Request_Template); err == nil {
+			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
 				if err = i.newTukSOAPRequest(); err == nil {
@@ -780,6 +780,7 @@ func (i *PDQQuery) getPatient() error {
 		}
 	case cnst.PDQv3:
 		if tmplt, err = template.New(cnst.PDQv3).Funcs(util.TemplateFuncMap()).Parse(PDQ_V3_Request_Template); err == nil {
+			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
 				if err = i.newTukSOAPRequest(); err == nil {

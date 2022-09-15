@@ -7,15 +7,15 @@ github.com/google/uuid
 # github.com/ipthomas/tukcnst v1.0.5
 ## explicit; go 1.19
 github.com/ipthomas/tukcnst
-# github.com/ipthomas/tukdbint v0.0.0-20220912193842-dabe6708e17f
+# github.com/ipthomas/tukdbint v1.0.6
 ## explicit; go 1.19
 github.com/ipthomas/tukdbint
-# github.com/ipthomas/tukhttp v1.0.5
+# github.com/ipthomas/tukhttp v1.0.6
 ## explicit; go 1.19
 github.com/ipthomas/tukhttp
-# github.com/ipthomas/tukpixm v1.0.5
+# github.com/ipthomas/tukpixm v1.0.6
 ## explicit; go 1.19
 github.com/ipthomas/tukpixm
-# github.com/ipthomas/tukutil v1.0.5
+# github.com/ipthomas/tukutil v1.0.6
 ## explicit; go 1.19
 github.com/ipthomas/tukutil
