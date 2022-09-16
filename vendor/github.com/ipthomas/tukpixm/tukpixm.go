@@ -749,6 +749,7 @@ func (i *PDQQuery) setPDQ_ID() error {
 	if i.PDQ_ID == "" || i.PDQ_OID == "" {
 		return errors.New("invalid request - no suitable id and oid input values found which can be used for pdq query")
 	}
+	i.Used_PID = i.PDQ_ID
 	return nil
 }
 func (i *PDQQuery) getPatient() error {
@@ -760,16 +761,13 @@ func (i *PDQQuery) getPatient() error {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest(); err == nil {
+				if err = i.newTukSOAPRequest("urn:hl7-org:v3:PRPA_IN201309UV02"); err == nil {
 					pdqrsp := PIXv3Response{}
 					if err = json.Unmarshal(i.Response, &pdqrsp); err == nil {
 						if pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code != "AA" {
 							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code)
 						}
 						i.Count, _ = strconv.Atoi(pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
-						if i.Count != 1 {
-							return errors.New("no unique patient returned from query")
-						}
 						pat := PIXPatient{}
 						pat.GivenName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
 						pat.FamilyName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
@@ -783,16 +781,13 @@ func (i *PDQQuery) getPatient() error {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest(); err == nil {
+				if err = i.newTukSOAPRequest("urn:hl7-org:v3:PRPA_IN201305UV02"); err == nil {
 					pdqrsp := PDQv3Response{}
 					if err = json.Unmarshal(i.Response, &pdqrsp); err == nil {
 						if pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code != "AA" {
 							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code)
 						}
 						i.Count, _ = strconv.Atoi(pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
-						if i.Count != 1 {
-							return errors.New("no unique patient returned from query")
-						}
 						pat := PIXPatient{}
 						pat.GivenName = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
 						pat.FamilyName = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
@@ -883,15 +878,18 @@ func (i *PDQQuery) newTukHttpRequest() error {
 	err := tukhttp.NewRequest(&httpReq)
 	i.Request = []byte(httpReq.URL)
 	i.Response = httpReq.Response
+	i.StatusCode = httpReq.StatusCode
 	return err
 }
-func (i *PDQQuery) newTukSOAPRequest() error {
+func (i *PDQQuery) newTukSOAPRequest(soapaction string) error {
 	httpReq := tukhttp.SOAPRequest{
-		URL:     i.Server_URL,
-		Body:    i.Request,
-		Timeout: i.Timeout,
+		URL:        i.Server_URL,
+		SOAPAction: soapaction,
+		Body:       i.Request,
+		Timeout:    i.Timeout,
 	}
 	err := tukhttp.NewRequest(&httpReq)
 	i.Response = httpReq.Response
+	i.StatusCode = httpReq.StatusCode
 	return err
 }

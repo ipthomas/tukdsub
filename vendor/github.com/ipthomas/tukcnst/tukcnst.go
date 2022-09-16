@@ -86,6 +86,8 @@ const (
 	SUBSCRIPTION_REFERENCE_PREFIX   = "https://NotificationBrokerServer/Subscription/"
 	SOAP_ACTION_UNSUBSCRIBE_REQUEST = "http://docs.oasis-open.org/wsn/bw2/SubscriptionManager/UnsubscribeRequest"
 	SOAP_ACTION_SUBSCRIBE_REQUEST   = "http://docs.oasis-open.org/wsn/bw-2/NotificationProducer/SubscribeRequest"
+	SOAP_ACTION_PIXV3_Request       = "urn:hl7-org:v3:PRPA_IN201309UV02"
+	SOAP_ACTION_PDQV3_Request       = "urn:hl7-org:v3:PRPA_IN201305UV02"
 	SOAP_ACTION                     = "SOAPAction"
 	CONTENT_TYPE                    = "Content-Type"
 	TEXT_HTML                       = "text/html"
