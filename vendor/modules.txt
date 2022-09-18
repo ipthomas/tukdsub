@@ -13,9 +13,9 @@ github.com/ipthomas/tukdbint
 # github.com/ipthomas/tukhttp v1.0.10
 ## explicit; go 1.19
 github.com/ipthomas/tukhttp
-# github.com/ipthomas/tukpixm v1.0.11
+# github.com/ipthomas/tukpdq v1.1.6
 ## explicit; go 1.19
-github.com/ipthomas/tukpixm
+github.com/ipthomas/tukpdq
 # github.com/ipthomas/tukutil v1.0.10
 ## explicit; go 1.19
 github.com/ipthomas/tukutil

@@ -1,9 +1,9 @@
-# tukpixm
-tukpixm provides a golang implementtion of IHE PIXm, IHE PIXv3 and IHE PDQv3 Consumer clients
+# tukpdq
+tukpdq provides a golang implementtion of IHE PIXm, IHE PIXv3 and IHE PDQv3 Consumer clients
 
 There is currently no authentication implemented. The github.com/ipthomas/tukhttp package is used to handle the http request/response and should be amended according to your authentication requirements
 
-Struct PDQQuery implements the tukpixm.PDQ interface
+Struct PDQQuery implements the tukpdq.PDQ interface
 
 	type PDQQuery struct {
 	Server     string
@@ -20,22 +20,20 @@ Struct PDQQuery implements the tukpixm.PDQ interface
 	Response   []byte
 	StatusCode int
 	Count      int
-	PDQ_ID     string
-	PDQ_OID    string
+	Used_ID     string
 	Patients   []PIXPatient `json:"patients"`
 }
 	Server must be set to either "pixm" to perform a IHE PIXm query or "pixv3" to perform an IHE PIXv3 query or "pdqv3" to perform an IHE PDQv3 query. The github.com/ipthomas/tukcnst provides constants for each of the valid Server values i.e. tukcnst.PIXm, tukcnst.PIXv3, tukcnst.PDQv3, or you can just use strings!
 	
-	A patient identifier is required for use in the PDQ. This can be either the MRN id along with the associated OID or the NHS ID (if no NHS OID is provided the NHS assigned OID is used) or the XDS regional ID
+	A patient identifier is required for use in the PDQ. This can be either the MRN id along with the associated OID or the NHS ID or the XDS regional ID
 
 	 The REG_OID is the Regional/XDS OID and is required
 	 
-	 Server_URL is the PIXm WS end point and is required.
+	 Server_URL is the IHE (PIXm or PIXv3 or PDQv3) compliant server WS end point and is required.
 
 	 Timeout is the http context timeout in seconds and is optional. Default is 5 secs
 
-	 PDQ_ID will be set to the ID used for the query
-	 PDQ_OID will be set to the OID used for the query
+	 Used_ID will be set to the ID used for the query
 	 
 	 Count will equal the number of patients found matching the query
 	 Response will contain the PIXm response in []byte format
@@ -62,13 +60,13 @@ Struct PDQQuery implements the tukpixm.PDQ interface
 	}
 
 	Example usage:
-		pdq := tukpixm.PDQQuery{
+		pdq := tukpdq.PDQQuery{
 		Server:     tukcnst.PIXm
 		NHS_ID:     "1111111111",
 		REG_OID:    "2.16.840.1.113883.2.1.3.31.2.1.1",
 		Server_URL: "http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient",
 	}
-	if err = tukpixm.PDQ(&pdq); err == nil {
+	if err = tukpdq.PDQ(&pdq); err == nil {
 		if pdq.Count == 1 {
 			log.Printf("Patient %s %s is registered", pdq.Patients[0].GivenName, pdq.Patients[0].FamilyName)
 		} else {
@@ -80,9 +78,9 @@ Struct PDQQuery implements the tukpixm.PDQ interface
 
 	Running the above example produces the following Log output:
 
-	2022/09/12 14:02:55.510679 tukpixm.go:188: HTTP GET Request Headers
+	2022/09/12 14:02:55.510679 tukpdq.go:188: HTTP GET Request Headers
 
-	2022/09/12 14:02:55.510834 tukpixm.go:190: {
+	2022/09/12 14:02:55.510834 tukpdq.go:190: {
 	  "Accept": [
 	    "*/*"
 	  ],
@@ -94,9 +92,9 @@ Struct PDQQuery implements the tukpixm.PDQ interface
 	  ]
 	}
 
-2022/09/12 14:02:55.510860 tukpixm.go:191: HTTP Request
+2022/09/12 14:02:55.510860 tukpdq.go:191: HTTP Request
 URL = http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient?identifier=2.16.840.1.113883.2.1.4.1%7C9999999468&_format=json&_pretty=true
-2022/09/12 14:02:55.851605 tukpixm.go:194: HTML Response - Status Code = 200
+2022/09/12 14:02:55.851605 tukpdq.go:194: HTML Response - Status Code = 200
 
 	{
 	  "resourceType": "Bundle",
@@ -172,9 +170,9 @@ URL = http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient?iden
 	  } ]
 	}
 
-	2022/09/12 14:02:55.852334 tukpixm.go:102: 1 Patient Entries in Response
-	2022/09/12 14:02:55.852392 tukpixm.go:122: Set NHS ID 9999999468 2.16.840.1.113883.2.1.4.1
-	2022/09/12 14:02:55.852427 tukpixm.go:117: Set PID TSUK.16619762302611 2.16.840.1.113883.2.1.3.31.2.1.1.1.3.1.1
-	2022/09/12 14:02:55.852455 tukpixm.go:112: Set Reg ID REG.1MWU5C92M2 2.16.840.1.113883.2.1.3.31.2.1.1
-	2022/09/12 14:02:55.852546 tukpixm.go:149: Added Patient 9999999468 to response
+	2022/09/12 14:02:55.852334 tukpdq.go:102: 1 Patient Entries in Response
+	2022/09/12 14:02:55.852392 tukpdq.go:122: Set NHS ID 9999999468 2.16.840.1.113883.2.1.4.1
+	2022/09/12 14:02:55.852427 tukpdq.go:117: Set PID TSUK.16619762302611 2.16.840.1.113883.2.1.3.31.2.1.1.1.3.1.1
+	2022/09/12 14:02:55.852455 tukpdq.go:112: Set Reg ID REG.1MWU5C92M2 2.16.840.1.113883.2.1.3.31.2.1.1
+	2022/09/12 14:02:55.852546 tukpdq.go:149: Added Patient 9999999468 to response
 	2022/09/12 14:02:55.852569 main.go:84: Patient Nhs Testpatient is registered

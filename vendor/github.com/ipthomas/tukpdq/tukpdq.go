@@ -1,10 +1,10 @@
-// tukpixm provides a golang implementtion of an IHE PIXm,IHE PIXv3 and IHE PDQv3 Client Consumers
+// tukpdq provides a golang implementtion of, IHE PIXm,IHE PIXv3 and IHE PDQv3 Client Consumers
 //
-// There is currently no authentication implemented. The func (i *PIXmQuery) newRequest() error is used to handle the http request/response and should be amended according to your authentication requirements
+// There is currently no authentication implemented. The func (i *PDQQuery) newRequest() error is used to handle the http request/response and should be amended according to your authentication requirements
 //
-// Struct PIXmQuery implements the tukpixm.PDQ interface
+// Struct PDQQuery implements the tukpdq.PDQ() interface
 //
-//	type PIXmQuery struct {
+//	type PDQQuery struct {
 //		Count        int          `json:"count"`
 //		PID          string       `json:"pid"`
 //		PIDOID       string       `json:"pidoid"`
@@ -31,12 +31,12 @@
 //	 []Patients is any array of PIXPatient structs containing all matched patients. Hopefully just 1 !!
 //
 //	Example usage:
-//		pdq := tukpixm.PIXmQuery{
+//		pdq := tukpdq.PIXmQuery{
 //			PID:        "9999999468",
 //			Region_OID: "2.16.840.1.113883.2.1.3.31.2.1.1",
 //			PIX_URL:    "http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient",
 //		}
-//		if err = tukpixm.PDQ(&pdq); err == nil {
+//		if err = tukpdq.PDQ(&pdq); err == nil {
 //			log.Printf("Patient %s %s is registered", pdq.Patients[0].GivenName, pdq.Patients[0].FamilyName)
 //		} else {
 //			log.Println(err.Error())
@@ -44,9 +44,9 @@
 //
 //	Running the above example produces the following Log output:
 //
-//	2022/09/12 14:02:55.510679 tukpixm.go:188: HTTP GET Request Headers
+//	2022/09/12 14:02:55.510679 tukpdq.go:188: HTTP GET Request Headers
 //
-//	2022/09/12 14:02:55.510834 tukpixm.go:190: {
+//	2022/09/12 14:02:55.510834 tukpdq.go:190: {
 //	  "Accept": [
 //	    "*/*"
 //	  ],
@@ -58,9 +58,9 @@
 //	  ]
 //	}
 //
-// 2022/09/12 14:02:55.510860 tukpixm.go:191: HTTP Request
+// 2022/09/12 14:02:55.510860 tukpdq.go:191: HTTP Request
 // URL = http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient?identifier=2.16.840.1.113883.2.1.4.1%7C9999999468&_format=json&_pretty=true
-// 2022/09/12 14:02:55.851605 tukpixm.go:194: HTML Response - Status Code = 200
+// 2022/09/12 14:02:55.851605 tukpdq.go:194: HTML Response - Status Code = 200
 //
 //	{
 //	  "resourceType": "Bundle",
@@ -136,13 +136,13 @@
 //	  } ]
 //	}
 //
-// 2022/09/12 14:02:55.852334 tukpixm.go:102: 1 Patient Entries in Response
-// 2022/09/12 14:02:55.852392 tukpixm.go:122: Set NHS ID 9999999468 2.16.840.1.113883.2.1.4.1
-// 2022/09/12 14:02:55.852427 tukpixm.go:117: Set PID TSUK.16619762302611 2.16.840.1.113883.2.1.3.31.2.1.1.1.3.1.1
-// 2022/09/12 14:02:55.852455 tukpixm.go:112: Set Reg ID REG.1MWU5C92M2 2.16.840.1.113883.2.1.3.31.2.1.1
-// 2022/09/12 14:02:55.852546 tukpixm.go:149: Added Patient 9999999468 to response
+// 2022/09/12 14:02:55.852334 tukpdq.go:102: 1 Patient Entries in Response
+// 2022/09/12 14:02:55.852392 tukpdq.go:122: Set NHS ID 9999999468 2.16.840.1.113883.2.1.4.1
+// 2022/09/12 14:02:55.852427 tukpdq.go:117: Set PID TSUK.16619762302611 2.16.840.1.113883.2.1.3.31.2.1.1.1.3.1.1
+// 2022/09/12 14:02:55.852455 tukpdq.go:112: Set Reg ID REG.1MWU5C92M2 2.16.840.1.113883.2.1.3.31.2.1.1
+// 2022/09/12 14:02:55.852546 tukpdq.go:149: Added Patient 9999999468 to response
 // 2022/09/12 14:02:55.852569 main.go:84: Patient Nhs Testpatient is registered
-package tukpixm
+package tukpdq
 
 import (
 	"bytes"
@@ -160,23 +160,22 @@ import (
 )
 
 type PDQQuery struct {
-	Server     string
-	MRN_ID     string
-	MRN_OID    string
-	NHS_ID     string
-	NHS_OID    string
-	REG_ID     string
-	REG_OID    string
-	Server_URL string
-	Timeout    int64
-	Used_PID   string
-	Request    []byte
-	Response   []byte
-	StatusCode int
-	Count      int
-	PDQ_ID     string
-	PDQ_OID    string
-	Patients   []PIXPatient `json:"patients"`
+	Server       string       `json:"server"`
+	MRN_ID       string       `json:"mrnid"`
+	MRN_OID      string       `json:"mrnoid"`
+	NHS_ID       string       `json:"nhsid"`
+	NHS_OID      string       `json:"nhsoid"`
+	REG_ID       string       `json:"regid"`
+	REG_OID      string       `json:"regoid"`
+	Server_URL   string       `json:"serverurl"`
+	Timeout      int64        `json:"timeout"`
+	Used_PID     string       `json:"usedpid"`
+	Used_PID_OID string       `json:"usedpidoid"`
+	Request      []byte       `json:"request"`
+	Response     []byte       `json:"response"`
+	StatusCode   int          `json:"statuscode"`
+	Count        int          `json:"count"`
+	Patients     []PIXPatient `json:"patients"`
 }
 
 type PDQv3Response struct {
@@ -706,8 +705,8 @@ type PIXInterface interface {
 }
 
 var (
-	PDQ_V3_Request_Template = "{{define \"pdqv3\"}}<S:Envelope xmlns:S='http://www.w3.org/2003/05/soap-envelope' xmlns:env='http://www.w3.org/2003/05/soap-envelope'><S:Header><To xmlns='http://www.w3.org/2005/08/addressing'>{{.Server_URL}}</To><Action xmlns='http://www.w3.org/2005/08/addressing' S:mustUnderstand='true' xmlns:S='http://www.w3.org/2003/05/soap-envelope'>urn:hl7-org:v3:PRPA_IN201305UV02</Action><ReplyTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo><FaultTo xmlns='http://www.w3.org/2005/08/addressing'>Address>http://www.w3.org/2005/08/addressing/anonymous</Address></FaultTo><MessageID xmlns='http://www.w3.org/2005/08/addressing'>{{newuuid}}</MessageID></S:Header><S:Body><PRPA_IN201305UV02 xmlns='urn:hl7-org:v3' ITSVersion='XML_1.0'><id extension='1663079209882' root='1.3.6.1.4.1.21998.2.1.10.15'/><creationTime value='{{simpledatetime}}'/><versionCode code='V3PR1'/><interactionId extension='PRPA_IN201305UV02' root='2.16.840.1.113883.1.6'/><processingCode code='P'/><processingModeCode code='T'/><acceptAckCode code='AL'/><receiver typeCode='RCV'><device classCode='DEV' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.795'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.1'/></representedOrganization></asAgent></device></receiver><sender typeCode='SND'><device classCode='DEV' determinerCode='INSTANCE'><id assigningAuthorityName='NHS' root='1.3.6.1.4.1.21367.2011.2.2.7919'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id assigningAuthorityName='ICB' root='1.3.6.1.4.1.21367.2011.2.7.5572'/></representedOrganization></asAgent></device></sender><controlActProcess classCode='CACT' moodCode='EVN'><code code='PRPA_TE201305UV02' codeSystem='2.16.840.1.113883.1.6'/><queryByParameter><queryId extension='1663079209880' root='1.3.6.1.4.1.21998.2.1.10.15'/><statusCode code='new'/><responseModalityCode code='R'/><responsePriorityCode code='I'/><matchCriterionList/><parameterList><livingSubjectId><value extension='{{.PID}}'/><semanticsText>LivingSubject.id</semanticsText></livingSubjectId></parameterList></queryByParameter></controlActProcess></PRPA_IN201305UV02></S:Body></S:Envelope>"
-	PIX_V3_Request_Template = "{{define \"pixv3\"}}<S:Envelope xmlns:S='http://www.w3.org/2003/05/soap-envelope' xmlns:env='http://www.w3.org/2003/05/soap-envelope'><S:Header><To xmlns='http://www.w3.org/2005/08/addressing'>{{.Server_URL}}</To><Action xmlns='http://www.w3.org/2005/08/addressing' S:mustUnderstand='true' xmlns:S='http://www.w3.org/2003/05/soap-envelope'>urn:hl7-org:v3:PRPA_IN201309UV02</Action><ReplyTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo><FaultTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></FaultTo><MessageID xmlns='http://www.w3.org/2005/08/addressing'>{{newuuid}}</MessageID></S:Header><S:Body><PRPA_IN201309UV02 xmlns='urn:hl7-org:v3' ITSVersion='XML_1.0'><id extension='1663059665645' root='1.3.6.1.4.1.21998.2.1.10.12'/><creationTime value='{{simpledatetime}}'/><versionCode code='V3PR1'/><interactionId extension='PRPA_IN201309UV02' root='2.16.840.1.113883.1.6'/><processingCode code='P'/><processingModeCode code='T'/><acceptAckCode code='AL'/><receiver typeCode='RCV'><device classCode='DEV' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.795'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.1'/></representedOrganization></asAgent></device></receiver><sender typeCode='SND'><device classCode='DEV' determinerCode='INSTANCE'><id assigningAuthorityName='NHS' root='1.3.6.1.4.1.21367.2011.2.2.7919'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id assigningAuthorityName='ICB' root='1.3.6.1.4.1.21367.2011.2.7.5572'/></representedOrganization></asAgent></device></sender><controlActProcess classCode='CACT' moodCode='EVN'><code code='PRPA_TE201309UV02' codeSystem='2.16.840.1.113883.1.6'/><queryByParameter><queryId extension='1663059665645' root='1.3.6.1.4.1.21998.2.1.10.12'/><statusCode code='new'/><responsePriorityCode code='I'/><parameterList><patientIdentifier><value assigningAuthorityName='{{.PIDOID}}' extension='{{.PID}}' root='{{.PIDOID}}'/><semanticsText>Patient.id</semanticsText></patientIdentifier></parameterList></queryByParameter></controlActProcess></PRPA_IN201309UV02></S:Body></S:Envelope>"
+	PDQ_V3_Request_Template = "{{define \"pdqv3\"}}<S:Envelope xmlns:S='http://www.w3.org/2003/05/soap-envelope' xmlns:env='http://www.w3.org/2003/05/soap-envelope'><S:Header><To xmlns='http://www.w3.org/2005/08/addressing'>{{.Server_URL}}</To><Action xmlns='http://www.w3.org/2005/08/addressing' S:mustUnderstand='true' xmlns:S='http://www.w3.org/2003/05/soap-envelope'>urn:hl7-org:v3:PRPA_IN201305UV02</Action><ReplyTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo><FaultTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></FaultTo><MessageID xmlns='http://www.w3.org/2005/08/addressing'>uuid:{{newuuid}}</MessageID></S:Header><S:Body><PRPA_IN201305UV02 xmlns='urn:hl7-org:v3' ITSVersion='XML_1.0'><id extension='1663079209882' root='1.3.6.1.4.1.21998.2.1.10.15'/><creationTime value='{{simpledatetime}}'/><versionCode code='V3PR1'/><interactionId extension='PRPA_IN201305UV02' root='2.16.840.1.113883.1.6'/><processingCode code='P'/><processingModeCode code='T'/><acceptAckCode code='AL'/><receiver typeCode='RCV'><device classCode='DEV' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.795'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.1'/></representedOrganization></asAgent></device></receiver><sender typeCode='SND'><device classCode='DEV' determinerCode='INSTANCE'><id assigningAuthorityName='EHR_TIANI-SPIRIT' root='1.3.6.1.4.1.21367.2011.2.2.7919'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id assigningAuthorityName='Tiani-Cisco' root='1.3.6.1.4.1.21367.2011.2.7.5572'/></representedOrganization></asAgent></device></sender><controlActProcess classCode='CACT' moodCode='EVN'><code code='PRPA_TE201305UV02' codeSystem='2.16.840.1.113883.1.6'/><queryByParameter><queryId extension='1663079209880' root='1.3.6.1.4.1.21998.2.1.10.15'/><statusCode code='new'/><responseModalityCode code='R'/><responsePriorityCode code='I'/><matchCriterionList/><parameterList><livingSubjectId><value extension='{{.Used_PID}}'/><semanticsText>LivingSubject.id</semanticsText></livingSubjectId></parameterList></queryByParameter></controlActProcess></PRPA_IN201305UV02></S:Body></S:Envelope>{{end}}"
+	PIX_V3_Request_Template = "{{define \"pixv3\"}}<S:Envelope xmlns:S='http://www.w3.org/2003/05/soap-envelope' xmlns:env='http://www.w3.org/2003/05/soap-envelope'><S:Header><To xmlns='http://www.w3.org/2005/08/addressing'>{{.Server_URL}}</To><Action xmlns='http://www.w3.org/2005/08/addressing' S:mustUnderstand='true' xmlns:S='http://www.w3.org/2003/05/soap-envelope'>urn:hl7-org:v3:PRPA_IN201309UV02</Action><ReplyTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo><FaultTo xmlns='http://www.w3.org/2005/08/addressing'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></FaultTo><MessageID xmlns='http://www.w3.org/2005/08/addressing'>uuid:{{newuuid}}</MessageID></S:Header><S:Body><PRPA_IN201309UV02 xmlns='urn:hl7-org:v3' ITSVersion='XML_1.0'><id extension='1663059665645' root='1.3.6.1.4.1.21998.2.1.10.12'/><creationTime value='{{simpledatetime}}'/><versionCode code='V3PR1'/><interactionId extension='PRPA_IN201309UV02' root='2.16.840.1.113883.1.6'/><processingCode code='P'/><processingModeCode code='T'/><acceptAckCode code='AL'/><receiver typeCode='RCV'><device classCode='DEV' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.795'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id root='1.3.6.1.4.1.21367.2009.2.2.1'/></representedOrganization></asAgent></device></receiver><sender typeCode='SND'><device classCode='DEV' determinerCode='INSTANCE'><id assigningAuthorityName='NHS' root='1.3.6.1.4.1.21367.2011.2.2.7919'/><asAgent classCode='AGNT'><representedOrganization classCode='ORG' determinerCode='INSTANCE'><id assigningAuthorityName='ICB' root='1.3.6.1.4.1.21367.2011.2.7.5572'/></representedOrganization></asAgent></device></sender><controlActProcess classCode='CACT' moodCode='EVN'><code code='PRPA_TE201309UV02' codeSystem='2.16.840.1.113883.1.6'/><queryByParameter><queryId extension='1663059665645' root='1.3.6.1.4.1.21998.2.1.10.12'/><statusCode code='new'/><responsePriorityCode code='I'/><parameterList><patientIdentifier><value assigningAuthorityName='{{.Used_PID_OID}}' extension='{{.Used_PID}}' root='{{.Used_PID_OID}}'/><semanticsText>Patient.id</semanticsText></patientIdentifier></parameterList></queryByParameter></controlActProcess></PRPA_IN201309UV02></S:Body></S:Envelope>{{end}}"
 )
 
 func PDQ(i PIXInterface) error {
@@ -733,23 +732,22 @@ func (i *PDQQuery) setPDQ_ID() error {
 		i.NHS_OID = "2.16.840.1.113883.2.1.4.1"
 	}
 	if i.MRN_ID != "" && i.MRN_OID != "" {
-		i.PDQ_ID = i.MRN_ID
-		i.PDQ_OID = i.MRN_OID
+		i.Used_PID = i.MRN_ID
+		i.Used_PID_OID = i.MRN_OID
 	} else {
 		if i.NHS_ID != "" {
-			i.PDQ_ID = i.NHS_ID
-			i.PDQ_OID = i.NHS_OID
+			i.Used_PID = i.NHS_ID
+			i.Used_PID_OID = i.NHS_OID
 		} else {
 			if i.REG_ID != "" && i.REG_OID != "" {
-				i.PDQ_ID = i.REG_ID
-				i.PDQ_OID = i.REG_OID
+				i.Used_PID = i.REG_ID
+				i.Used_PID_OID = i.REG_OID
 			}
 		}
 	}
-	if i.PDQ_ID == "" || i.PDQ_OID == "" {
+	if i.Used_PID == "" || i.Used_PID_OID == "" {
 		return errors.New("invalid request - no suitable id and oid input values found which can be used for pdq query")
 	}
-	i.Used_PID = i.PDQ_ID
 	return nil
 }
 func (i *PDQQuery) getPatient() error {
@@ -761,9 +759,9 @@ func (i *PDQQuery) getPatient() error {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest("urn:hl7-org:v3:PRPA_IN201309UV02"); err == nil {
+				if err = i.newTukSOAPRequest(cnst.SOAP_ACTION_PIXV3_Request); err == nil {
 					pdqrsp := PIXv3Response{}
-					if err = json.Unmarshal(i.Response, &pdqrsp); err == nil {
+					if err = xml.Unmarshal(i.Response, &pdqrsp); err == nil {
 						if pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code != "AA" {
 							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code)
 						}
@@ -772,18 +770,30 @@ func (i *PDQQuery) getPatient() error {
 						pat.GivenName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
 						pat.FamilyName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
 						i.Patients = append(i.Patients, pat)
+					} else {
+						log.Println(err.Error())
+						return err
 					}
+				} else {
+					log.Println(err.Error())
+					return err
 				}
+			} else {
+				log.Println(err.Error())
+				return err
 			}
+		} else {
+			log.Println(err.Error())
+			return err
 		}
 	case cnst.PDQv3:
 		if tmplt, err = template.New(cnst.PDQv3).Funcs(util.TemplateFuncMap()).Parse(PDQ_V3_Request_Template); err == nil {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest("urn:hl7-org:v3:PRPA_IN201305UV02"); err == nil {
+				if err = i.newTukSOAPRequest(cnst.SOAP_ACTION_PDQV3_Request); err == nil {
 					pdqrsp := PDQv3Response{}
-					if err = json.Unmarshal(i.Response, &pdqrsp); err == nil {
+					if err = xml.Unmarshal(i.Response, &pdqrsp); err == nil {
 						if pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code != "AA" {
 							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code)
 						}
@@ -797,9 +807,21 @@ func (i *PDQQuery) getPatient() error {
 						pat.State = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.State
 						pat.Street = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.StreetAddressLine
 						i.Patients = append(i.Patients, pat)
+					} else {
+						log.Println(err.Error())
+						return err
 					}
+				} else {
+					log.Println(err.Error())
+					return err
 				}
+			} else {
+				log.Println(err.Error())
+				return err
 			}
+		} else {
+			log.Println(err.Error())
+			return err
 		}
 	case cnst.PIXm:
 		if err := i.newTukHttpRequest(); err != nil {
@@ -871,8 +893,8 @@ func (i *PDQQuery) getPatient() error {
 func (i *PDQQuery) newTukHttpRequest() error {
 	httpReq := tukhttp.PIXmRequest{
 		URL:     i.Server_URL,
-		PID_OID: i.PDQ_OID,
-		PID:     i.PDQ_ID,
+		PID_OID: i.Used_PID_OID,
+		PID:     i.Used_PID,
 		Timeout: i.Timeout,
 	}
 	err := tukhttp.NewRequest(&httpReq)
