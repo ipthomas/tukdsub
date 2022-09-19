@@ -13,7 +13,7 @@ import (
 
 	dbint "github.com/ipthomas/tukdbint"
 	"github.com/ipthomas/tukhttp"
-	pixm "github.com/ipthomas/tukpdq"
+	pdq "github.com/ipthomas/tukpdq"
 	util "github.com/ipthomas/tukutil"
 )
 
@@ -256,13 +256,13 @@ func (i *DSUBEvent) newEvent() error {
 			log.Printf("TUK Event Subscriptions Count : %v", tukdbSubs.Count)
 			if tukdbSubs.Count > 0 {
 				log.Printf("Obtaining NHS ID. Using %s", i.Event.XdsPid+":"+REG_OID)
-				pdq := pixm.PDQQuery{
+				pdq := pdq.PDQQuery{
 					Server:     tukcnst.PIXv3,
 					REG_ID:     i.Event.XdsPid,
 					Server_URL: getCodeSystemVal(tukcnst.PIX_URL),
 					REG_OID:    REG_OID,
 				}
-				if err = pixm.PDQ(&pdq); err != nil {
+				if err = pdq.PDQ(&pdq); err != nil {
 					return err
 				}
 				if pdq.Count == 0 {
