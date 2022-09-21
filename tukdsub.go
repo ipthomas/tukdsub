@@ -9,25 +9,27 @@ import (
 	"text/template"
 
 	"github.com/ipthomas/tukcnst"
-
-	dbint "github.com/ipthomas/tukdbint"
+	"github.com/ipthomas/tukdbint"
 	"github.com/ipthomas/tukhttp"
-	tukpdq "github.com/ipthomas/tukpdq"
-	util "github.com/ipthomas/tukutil"
+	"github.com/ipthomas/tukpdq"
+	"github.com/ipthomas/tukutil"
 )
 
 var (
+	DSUB_BROKER_URL         = ""
+	PDQ_SERVER_URL          = ""
 	REG_OID                 = ""
-	CS                      = make(map[string]string)
+	NHS_OID                 = "2.16.840.1.113883.2.1.4.1"
 	DSUB_ACK_TEMPLATE       = "<SOAP-ENV:Envelope xmlns:SOAP-ENV='http://www.w3.org/2003/05/soap-envelope' xmlns:s='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'><SOAP-ENV:Body/></SOAP-ENV:Envelope>"
 	DSUB_SUBSCRIBE_TEMPLATE = "{{define \"subscribe\"}}<SOAP-ENV:Envelope xmlns:SOAP-ENV='http://www.w3.org/2003/05/soap-envelope' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:s='http://www.w3.org/2001/XMLSchema' xmlns:wsa='http://www.w3.org/2005/08/addressing'><SOAP-ENV:Header><wsa:Action SOAP-ENV:mustUnderstand='true'>http://docs.oasis-open.org/wsn/bw-2/NotificationProducer/SubscribeRequest</wsa:Action><wsa:MessageID>urn:uuid:{{newuuid}}</wsa:MessageID><wsa:ReplyTo SOAP-ENV:mustUnderstand='true'><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo><wsa:To>{{.BrokerUrl}}</wsa:To></SOAP-ENV:Header><SOAP-ENV:Body><wsnt:Subscribe xmlns:wsnt='http://docs.oasis-open.org/wsn/b-2' xmlns:a='http://www.w3.org/2005/08/addressing' xmlns:rim='urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0' xmlns:wsa='http://www.w3.org/2005/08/addressing'><wsnt:ConsumerReference><wsa:Address>{{.ConsumerUrl}}</wsa:Address></wsnt:ConsumerReference><wsnt:Filter><wsnt:TopicExpression Dialect='http://docs.oasis-open.org/wsn/t-1/TopicExpression/Simple'>ihe:FullDocumentEntry</wsnt:TopicExpression><rim:AdhocQuery id='urn:uuid:742790e0-aba6-43d6-9f1f-e43ed9790b79'><rim:Slot name='{{.Topic}}'><rim:ValueList><rim:Value>('{{.Expression}}')</rim:Value></rim:ValueList></rim:Slot></rim:AdhocQuery></wsnt:Filter></wsnt:Subscribe></SOAP-ENV:Body></SOAP-ENV:Envelope>{{end}}"
 	DSUB_CANCEL_TEMPLATE    = "{{define \"cancel\"}}<soap:Envelope xmlns:soap='http://www.w3.org/2003/05/soap-envelope'><soap:Header><Action xmlns='http://www.w3.org/2005/08/addressing' soap:mustUnderstand='true'>http://docs.oasis-open.org/wsn/bw-2/SubscriptionManager/UnsubscribeRequest</Action><MessageID xmlns='http://www.w3.org/2005/08/addressing' soap:mustUnderstand='true'>urn:uuid:{{.UUID}}</MessageID><To xmlns='http://www.w3.org/2005/08/addressing' soap:mustUnderstand='true'>{{.BrokerRef}}</To><ReplyTo xmlns='http://www.w3.org/2005/08/addressing' soap:mustUnderstand='true'><Address>http://www.w3.org/2005/08/addressing/anonymous</Address></ReplyTo></soap:Header><soap:Body><Unsubscribe xmlns='http://docs.oasis-open.org/wsn/b-2' xmlns:ns2='http://www.w3.org/2005/08/addressing' xmlns:ns3='http://docs.oasis-open.org/wsrf/bf-2' xmlns:ns4='urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0' xmlns:ns5='urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0' xmlns:ns6='urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0' xmlns:ns7='http://docs.oasis-open.org/wsn/t-1' xmlns:ns8='http://docs.oasis-open.org/wsrf/r-2'/></soap:Body></soap:Envelope>{{end}}"
 )
 
 type DSUBEvent struct {
-	Message string            `json:"message"`
-	Notify  DSUBNotifyMessage `json:"notify"`
-	Event   dbint.Event       `json:"event"`
+	Message  string            `json:"message"`
+	Notify   DSUBNotifyMessage `json:"notify"`
+	Event    tukdbint.Event    `json:"event"`
+	Response string            `json:"response"`
 }
 
 // DSUBSubscribeResponse is an IHE DSUB Subscribe Message compliant struct
@@ -189,23 +191,17 @@ type DSUB_Interface interface {
 	newEvent() error
 }
 
-func SetRegOID(regoid string) {
+func SetVars(dsubbrokerurl string, pdqserverurl string, nhsoid string, regoid string, dburl string) {
+	DSUB_BROKER_URL = dsubbrokerurl
+	PDQ_SERVER_URL = pdqserverurl
 	REG_OID = regoid
+	if nhsoid != "" {
+		NHS_OID = nhsoid
+	}
 }
+
 func NewDsubEvent(i DSUB_Interface) error {
 	return i.newEvent()
-}
-
-// (i *CodeSystem) newEvent() sets the DSUB package codesystem which is merged with the tukutil.Codesystem. If a CS entry exists, the provided CS entry replaces the existing cs entry
-func (i *CodeSystem) newEvent() error {
-	for k, v := range i.CS_Map {
-		CS[k] = v
-	}
-	if regoid, ok := CS["REG_OID"]; ok {
-		REG_OID = regoid
-
-	}
-	return nil
 }
 
 // (i *DSUB_Template) newEvent()
@@ -238,37 +234,43 @@ func (i *DSUB_Template) newEvent() error {
 //		dsubEvent.NewEvent()
 func (i *DSUBEvent) newEvent() error {
 	log.Printf("Processing DSUB Broker Notfy Message\n%s", i.Message)
-	if err := i.newDSUBNotifyMessage(); err == nil {
+	i.Response = DSUB_ACK_TEMPLATE
+	if err := i.NewDSUBNotifyMessage(); err == nil {
 		if i.Event.BrokerRef == "" {
-			return errors.New("no subscription ref found in notification message")
+			log.Println("no subscription ref found in notification message")
+			return nil
 		}
 		log.Printf("Found Subscription Reference %s. Setting Event state from Notify Message", i.Event.BrokerRef)
 		i.initEvent()
 		if i.Event.XdsPid == "" {
-			return errors.New("no pid found in notification message")
+			log.Println("no pid found in notification message")
+			return nil
 		}
 		log.Printf("Checking for TUK Event subscriptions with Broker Ref = %s", i.Event.BrokerRef)
-		tukdbSub := dbint.Subscription{BrokerRef: i.Event.BrokerRef}
-		tukdbSubs := dbint.Subscriptions{Action: tukcnst.SELECT}
+		tukdbSub := tukdbint.Subscription{BrokerRef: i.Event.BrokerRef}
+		tukdbSubs := tukdbint.Subscriptions{Action: tukcnst.SELECT}
 		tukdbSubs.Subscriptions = append(tukdbSubs.Subscriptions, tukdbSub)
-		if err = dbint.NewDBEvent(&tukdbSubs); err == nil {
+		if err = tukdbint.NewDBEvent(&tukdbSubs); err == nil {
 			log.Printf("TUK Event Subscriptions Count : %v", tukdbSubs.Count)
 			if tukdbSubs.Count > 0 {
 				log.Printf("Obtaining NHS ID. Using %s", i.Event.XdsPid+":"+REG_OID)
 				pdq := tukpdq.PDQQuery{
 					Server:     tukcnst.PIXv3,
 					REG_ID:     i.Event.XdsPid,
-					Server_URL: GetCodeSystemVal(tukcnst.PIX_URL),
+					Server_URL: PDQ_SERVER_URL,
 					REG_OID:    REG_OID,
 				}
 				if err = tukpdq.PDQ(&pdq); err != nil {
-					return err
+					log.Println(err.Error())
+					return nil
 				}
 				if pdq.Count == 0 {
-					return errors.New("no patient returned for pid " + i.Event.XdsPid)
+					log.Println("no patient returned for pid " + i.Event.XdsPid)
+					return nil
 				}
 				if len(pdq.Patients[0].NHSID) != 10 {
-					return errors.New("no valid nhs id returned in pix query for pid " + i.Event.XdsPid)
+					log.Println("no valid nhs id returned in pix query for pid " + i.Event.XdsPid)
+					return nil
 				}
 				for _, dbsub := range tukdbSubs.Subscriptions {
 					if dbsub.Id > 0 {
@@ -276,16 +278,16 @@ func (i *DSUBEvent) newEvent() error {
 						i.Event.Pathway = dbsub.Pathway
 						i.Event.Topic = dbsub.Topic
 						i.Event.NhsId = pdq.Patients[0].NHSID
-						tukevs := dbint.Events{Action: "insert"}
+						tukevs := tukdbint.Events{Action: "insert"}
 						tukevs.Events = append(tukevs.Events, i.Event)
-						if err = dbint.NewDBEvent(&tukevs); err == nil {
+						if err = tukdbint.NewDBEvent(&tukevs); err == nil {
 							log.Printf("Created TUK DB Event for Pathway %s Expression %s Broker Ref %s", i.Event.Pathway, i.Event.Expression, i.Event.BrokerRef)
 						}
 					}
 				}
 			} else {
 				log.Printf("No Subscriptions found with brokerref = %s. Sending Cancel request to Broker", i.Event.BrokerRef)
-				dsubCancel := DSUBCancel{BrokerRef: i.Event.BrokerRef, UUID: util.NewUuid()}
+				dsubCancel := DSUBCancel{BrokerRef: i.Event.BrokerRef, UUID: tukutil.NewUuid()}
 				dsubCancel.newEvent()
 			}
 		}
@@ -295,7 +297,7 @@ func (i *DSUBEvent) newEvent() error {
 
 // InitDSUBEvent initialise the DSUBEvent struc with values parsed from the DSUBNotifyMessage
 func (i *DSUBEvent) initEvent() {
-	i.Event.Creationtime = util.Time_Now()
+	i.Event.Creationtime = tukutil.Time_Now()
 	i.Event.DocName = i.Notify.NotificationMessage.Message.SubmitObjectsRequest.RegistryObjectList.ExtrinsicObject.Name.LocalizedString.Value
 	i.Event.ClassCode = tukcnst.NO_VALUE
 	i.Event.ConfCode = tukcnst.NO_VALUE
@@ -335,12 +337,12 @@ func (i *DSUBEvent) initEvent() {
 				switch s.Name {
 				case tukcnst.AUTHOR_PERSON:
 					for _, ap := range s.ValueList.Value {
-						i.Event.User = i.Event.User + util.PrettyAuthorPerson(ap) + ","
+						i.Event.User = i.Event.User + tukutil.PrettyAuthorPerson(ap) + ","
 					}
 					i.Event.User = strings.TrimSuffix(i.Event.User, ",")
 				case tukcnst.AUTHOR_INSTITUTION:
 					for _, ai := range s.ValueList.Value {
-						i.Event.Org = i.Event.Org + util.PrettyAuthorInstitution(ai) + ","
+						i.Event.Org = i.Event.Org + tukutil.PrettyAuthorInstitution(ai) + ","
 					}
 					i.Event.Org = strings.TrimSuffix(i.Event.Org, ",")
 				}
@@ -352,23 +354,23 @@ func (i *DSUBEvent) initEvent() {
 	i.Event.Role = i.Event.PracticeCode
 	i.setExternalIdentifiers()
 	log.Println("Parsed DSUB Notify Message")
-	util.Log(i)
+	tukutil.Log(i)
 }
 
-// NewDSUBNotifyMessage creates an IHE DSUB Notify message struc from the notfy element in the DSUB message
-func (i *DSUBEvent) newDSUBNotifyMessage() error {
+// NewDSUBNotifyMessage creates an IHE DSUB Notify message struc from the notfy element in the i.Message
+func (i *DSUBEvent) NewDSUBNotifyMessage() error {
 	dsubNotify := DSUBNotifyMessage{}
 	if i.Message == "" {
 		return errors.New("message is empty")
 	}
-	notifyElement := util.GetXMLNodeList(i.Message, tukcnst.DSUB_NOTIFY_ELEMENT)
+	notifyElement := tukutil.GetXMLNodeList(i.Message, tukcnst.DSUB_NOTIFY_ELEMENT)
 	if notifyElement == "" {
 		return errors.New("unable to locate notify element in received message")
 	}
 	if err := xml.Unmarshal([]byte(notifyElement), &dsubNotify); err != nil {
 		return err
 	}
-	i.Event = dbint.Event{BrokerRef: dsubNotify.NotificationMessage.SubscriptionReference.Address.Text}
+	i.Event = tukdbint.Event{BrokerRef: dsubNotify.NotificationMessage.SubscriptionReference.Address.Text}
 	i.Notify = dsubNotify
 	return nil
 }
@@ -396,7 +398,7 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 
 // (i *DSUBCancel) NewEvent() creates an IHE DSUB cancel message and sends it to the DSUB broker
 func (i *DSUBCancel) newEvent() error {
-	tmplt, err := template.New(tukcnst.CANCEL).Funcs(util.TemplateFuncMap()).Parse(DSUB_CANCEL_TEMPLATE)
+	tmplt, err := template.New(tukcnst.CANCEL).Funcs(tukutil.TemplateFuncMap()).Parse(DSUB_CANCEL_TEMPLATE)
 	if err != nil {
 		log.Println(err.Error())
 		return err
@@ -409,7 +411,7 @@ func (i *DSUBCancel) newEvent() error {
 	}
 	i.Request = b.Bytes()
 	soapReq := tukhttp.SOAPRequest{
-		URL:        util.GetCodeSystemVal(tukcnst.DSUB_BROKER_URL),
+		URL:        DSUB_BROKER_URL,
 		SOAPAction: tukcnst.SOAP_ACTION_UNSUBSCRIBE_REQUEST,
 		Timeout:    1,
 		Body:       i.Request,
@@ -421,7 +423,7 @@ func (i *DSUBCancel) newEvent() error {
 func (i *DSUBAck) newEvent() error {
 	i.Request = []byte(DSUB_ACK_TEMPLATE)
 	soapReq := tukhttp.SOAPRequest{
-		URL:     util.GetCodeSystemVal(tukcnst.DSUB_BROKER_URL),
+		URL:     DSUB_BROKER_URL,
 		Timeout: 2,
 		Body:    i.Request,
 	}
@@ -430,12 +432,12 @@ func (i *DSUBAck) newEvent() error {
 
 // (i *DSUBSubscribe) NewEvent() creates an IHE DSUB Subscribe message and sends it to the DSUB broker
 func (i *DSUBSubscribe) newEvent() error {
-	if tmplt, err := template.New(tukcnst.SUBSCRIBE).Funcs(util.TemplateFuncMap()).Parse(DSUB_SUBSCRIBE_TEMPLATE); err == nil {
+	if tmplt, err := template.New(tukcnst.SUBSCRIBE).Funcs(tukutil.TemplateFuncMap()).Parse(DSUB_SUBSCRIBE_TEMPLATE); err == nil {
 		var b bytes.Buffer
 		if err := tmplt.Execute(&b, i); err == nil {
 			i.Request = b.Bytes()
 			soapReq := tukhttp.SOAPRequest{
-				URL:        util.GetCodeSystemVal(tukcnst.DSUB_BROKER_URL),
+				URL:        DSUB_BROKER_URL,
 				SOAPAction: tukcnst.SOAP_ACTION_SUBSCRIBE_REQUEST,
 				Timeout:    2,
 				Body:       i.Request,
@@ -492,12 +494,4 @@ func SetTemplate(name string, dsubTemplate string) {
 	case tukcnst.DSUB_CANCEL_TEMPLATE:
 		DSUB_CANCEL_TEMPLATE = dsubTemplate
 	}
-}
-
-// GetCodeSystemVal returns the value associated with the input string value. The codesystem is initialised from the tukutil.Codesystem and the dsub codesystem (if set by SetCodesystem(cs) )
-func GetCodeSystemVal(key string) string {
-	if val, ok := CS[key]; ok {
-		return val
-	}
-	return key
 }
