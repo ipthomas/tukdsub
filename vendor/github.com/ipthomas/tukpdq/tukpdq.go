@@ -754,8 +754,8 @@ func (i *PDQQuery) getPatient() error {
 	var tmplt *template.Template
 	var err error
 	switch i.Server {
-	case cnst.PIXv3:
-		if tmplt, err = template.New(cnst.PIXv3).Funcs(util.TemplateFuncMap()).Parse(PIX_V3_Request_Template); err == nil {
+	case cnst.PDQ_SERVER_TYPE_PIXV3:
+		if tmplt, err = template.New(cnst.PDQ_SERVER_TYPE_PIXV3).Funcs(util.TemplateFuncMap()).Parse(PIX_V3_Request_Template); err == nil {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
@@ -786,8 +786,8 @@ func (i *PDQQuery) getPatient() error {
 			log.Println(err.Error())
 			return err
 		}
-	case cnst.PDQv3:
-		if tmplt, err = template.New(cnst.PDQv3).Funcs(util.TemplateFuncMap()).Parse(PDQ_V3_Request_Template); err == nil {
+	case cnst.PDQ_SERVER_TYPE_PDQV3:
+		if tmplt, err = template.New(cnst.PDQ_SERVER_TYPE_PDQV3).Funcs(util.TemplateFuncMap()).Parse(PDQ_V3_Request_Template); err == nil {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
@@ -823,7 +823,7 @@ func (i *PDQQuery) getPatient() error {
 			log.Println(err.Error())
 			return err
 		}
-	case cnst.PIXm:
+	case cnst.PDQ_SERVER_TYPE_PIXM:
 		if err := i.newTukHttpRequest(); err != nil {
 			return err
 		}
