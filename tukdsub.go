@@ -18,6 +18,7 @@ import (
 var (
 	DSUB_BROKER_URL         = ""
 	PDQ_SERVER_URL          = ""
+	PDQ_SERVER_TYPE         = tukcnst.PDQ_SERVER_TYPE_PIXV3
 	REG_OID                 = ""
 	NHS_OID                 = "2.16.840.1.113883.2.1.4.1"
 	DSUB_ACK_TEMPLATE       = "<SOAP-ENV:Envelope xmlns:SOAP-ENV='http://www.w3.org/2003/05/soap-envelope' xmlns:s='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'><SOAP-ENV:Body/></SOAP-ENV:Envelope>"
@@ -255,7 +256,7 @@ func (i *DSUBEvent) newEvent() error {
 			if tukdbSubs.Count > 0 {
 				log.Printf("Obtaining NHS ID. Using %s", i.Event.XdsPid+":"+REG_OID)
 				pdq := tukpdq.PDQQuery{
-					Server:     tukcnst.PIXv3,
+					Server:     PDQ_SERVER_TYPE,
 					REG_ID:     i.Event.XdsPid,
 					Server_URL: PDQ_SERVER_URL,
 					REG_OID:    REG_OID,
