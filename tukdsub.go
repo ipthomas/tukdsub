@@ -272,7 +272,12 @@ func (i *DSUBEvent) newDSUBNotify() error {
 				}
 			} else {
 				log.Printf("No Subscriptions found with brokerref = %s. Sending Cancel request to Broker", i.Event.BrokerRef)
-				dsubCancel := DSUBCancel{BrokerRef: i.Event.BrokerRef, UUID: tukutil.NewUuid()}
+				dsubCancel := DSUBCancel{
+					BrokerURL:       i.DSUB_Broker_URL,
+					BrokerRef:       i.Event.BrokerRef,
+					UUID:            tukutil.NewUuid(),
+					Cancel_Template: i.DSUB_Cancel_Template,
+				}
 				dsubCancel.newEvent()
 			}
 		}
