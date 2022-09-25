@@ -278,7 +278,9 @@ func (i *DSUBEvent) newDSUBNotify() error {
 					UUID:            tukutil.NewUuid(),
 					Cancel_Template: i.DSUB_Cancel_Template,
 				}
-				dsubCancel.newEvent()
+				if err := dsubCancel.newEvent(); err != nil {
+					log.Println(err.Error())
+				}
 			}
 		}
 	}
