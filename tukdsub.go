@@ -200,23 +200,11 @@ func NewEvent(i DSUB_Interface) error {
 	return i.newEvent()
 }
 
-func (i *DSUBEvent) newEvent() error {
-	switch i.Action {
-	case tukcnst.CREATE:
-		return i.newDSUBNotify()
-	}
-	return errors.New("action not supported")
-}
-
-// (i *DSUBEvent) newDSUBNotify creates a DSUBNotifyMessage from the DSUBEvent.Message and creates a dbint.Event from the DSUBNotifyMessage values
+// (i *DSUBEvent) newEvent creates a DSUBNotifyMessage from the DSUBEvent.Message and creates a dbint.Event from the DSUBNotifyMessage values
 // It then checks for Tuk DB Subscriptions matching the brokerref in the populated DSUBEvent.BrokerRef and creates a Tuk DB Event for each subscription
 // A DSUB ack response is always sent back to the DSUB broker regardless of success
 // If no subscriptions are found a DSUB cancel message is sent to the DSUB Broker
-//
-//	Example
-//		dsubEvent := tukdsub.DSUBEvent{Message: string(`notiftMessage.Body')}
-//		dsubEvent.NewEvent()
-func (i *DSUBEvent) newDSUBNotify() error {
+func (i *DSUBEvent) newEvent() error {
 	log.Printf("Processing DSUB Broker Notfy Message\n%s", i.Message)
 	i.Response = i.DSUB_Ack_Template
 	if err := i.NewDSUBNotifyMessage(); err == nil {
