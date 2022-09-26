@@ -15,6 +15,7 @@ import (
 	"github.com/ipthomas/tukutil"
 )
 
+// DSUBEvent implements NewEvent(i DSUB_Interface) error
 type DSUBEvent struct {
 	Action                  string
 	TUK_DB_Connection       tukdbint.TukDBConnection
@@ -266,7 +267,7 @@ func (i *DSUBEvent) newEvent() error {
 					UUID:            tukutil.NewUuid(),
 					Cancel_Template: i.DSUB_Cancel_Template,
 				}
-				if err := dsubCancel.newEvent(); err != nil {
+				if err := dsubCancel.NewEvent(); err != nil {
 					log.Println(err.Error())
 				}
 			}
@@ -376,7 +377,7 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 }
 
 // (i *DSUBCancel) NewEvent() creates an IHE DSUB cancel message and sends it to the DSUB broker
-func (i *DSUBCancel) newEvent() error {
+func (i *DSUBCancel) NewEvent() error {
 	tmplt, err := template.New(tukcnst.CANCEL).Funcs(tukutil.TemplateFuncMap()).Parse(i.Cancel_Template)
 	if err != nil {
 		log.Println(err.Error())
@@ -411,30 +412,35 @@ func (i *DSUBAck) newEvent() error {
 
 // (i *DSUBSubscribe) NewEvent() creates an IHE DSUB Subscribe message and sends it to the DSUB broker
 func (i *DSUBSubscribe) newEvent() error {
-	if tmplt, err := template.New(tukcnst.SUBSCRIBE).Funcs(tukutil.TemplateFuncMap()).Parse(i.Subscribe_Template); err == nil {
-		var b bytes.Buffer
-		if err := tmplt.Execute(&b, i); err == nil {
-			i.Request = b.Bytes()
-			soapReq := tukhttp.SOAPRequest{
-				URL:        i.BrokerURL,
-				SOAPAction: tukcnst.SOAP_ACTION_SUBSCRIBE_REQUEST,
-				Body:       i.Request,
-			}
-			if err := tukhttp.NewRequest(&soapReq); err != nil {
-				return err
-			}
-			subrsp := DSUBSubscribeResponse{}
-			if err := xml.Unmarshal(soapReq.Response, &subrsp); err == nil {
-				i.BrokerRef = subrsp.Body.SubscribeResponse.SubscriptionReference.Address
-				log.Printf("Broker Response. Broker Ref :  %s", subrsp.Body.SubscribeResponse.SubscriptionReference.Address)
-			} else {
-				return err
-			}
-		} else {
-			return err
-		}
-	} else {
+	tmplt, err := template.New(tukcnst.SUBSCRIBE).Funcs(tukutil.TemplateFuncMap()).Parse(i.Subscribe_Template)
+	if err != nil {
+		log.Println(err.Error())
 		return err
 	}
+	var b bytes.Buffer
+	err = tmplt.Execute(&b, i)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	i.Request = b.Bytes()
+	soapReq := tukhttp.SOAPRequest{
+		URL:        i.BrokerURL,
+		SOAPAction: tukcnst.SOAP_ACTION_SUBSCRIBE_REQUEST,
+		Body:       i.Request,
+	}
+	err = tukhttp.NewRequest(&soapReq)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	subrsp := DSUBSubscribeResponse{}
+	err = xml.Unmarshal(soapReq.Response, &subrsp)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	i.BrokerRef = subrsp.Body.SubscribeResponse.SubscriptionReference.Address
+	log.Printf("Broker Response. Broker Ref :  %s", subrsp.Body.SubscribeResponse.SubscriptionReference.Address)
 	return nil
 }
