@@ -157,7 +157,7 @@ func (i *AWS_APIRequest) newRequest() error {
 	var req *http.Request
 	var resp *http.Response
 	client := &http.Client{}
-	if req, err = http.NewRequest(getHttpMethod(i.Act), i.URL+i.Resource, bytes.NewBuffer(i.Body)); err == nil {
+	if req, err = http.NewRequest(strings.ToUpper(i.Act), i.URL+i.Resource, bytes.NewBuffer(i.Body)); err == nil {
 		req.Header.Add(cnst.CONTENT_TYPE, cnst.APPLICATION_JSON_CHARSET_UTF_8)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 		defer cancel()
@@ -175,7 +175,7 @@ func (i *AWS_APIRequest) newRequest() error {
 	return err
 }
 func (i *AWS_APIRequest) logRequest(headers http.Header) {
-	log.Println("HTTP " + getHttpMethod(i.Act) + " Request Headers")
+	log.Println("HTTP " + strings.ToUpper(i.Act) + " Request Headers")
 	util.Log(headers)
 	log.Printf("HTTP Request\nURL = %s\nTimeout = %v\nMessage body\n%s", i.URL, i.Timeout, string(i.Body))
 }
@@ -197,12 +197,4 @@ func (i *PIXmRequest) logRequest(headers http.Header) {
 }
 func (i *PIXmRequest) logResponse() {
 	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
-}
-func getHttpMethod(action string) string {
-	switch action {
-	case cnst.SELECT:
-		return cnst.HTTP_GET
-	default:
-		return cnst.HTTP_POST
-	}
 }

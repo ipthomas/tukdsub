@@ -17,26 +17,21 @@ import (
 
 // DSUBEvent implements NewEvent(i DSUB_Interface) error
 type DSUBEvent struct {
-	Action                  string
-	TUK_DB_Connection       tukdbint.TukDBConnection
-	DSUB_Broker_URL         string
-	DSUB_Consumer_URL       string
-	DSUB_Topic              string
-	DSUB_Expression         string
-	DSUB_Ack_Template       string
-	DSUB_Subscribe_Template string
-	DSUB_Cancel_Template    string
-	PDQ_SERVER_URL          string
-	PDQ_SERVER_TYPE         string
-	REG_OID                 string
-	NHS_OID                 string
-	Message                 string
-	Notify                  DSUBNotifyMessage
-	Event                   tukdbint.Event
-	Request                 []byte
-	Response                string
-	BrokerRef               string
-	UUID                    string
+	Action               string
+	DSUB_Broker_URL      string
+	DSUB_Ack_Template    string
+	DSUB_Cancel_Template string
+	PDQ_SERVER_URL       string
+	PDQ_SERVER_TYPE      string
+	REG_OID              string
+	NHS_OID              string
+	Message              string
+	Notify               DSUBNotifyMessage
+	Event                tukdbint.Event
+	Request              []byte
+	Response             string
+	BrokerRef            string
+	UUID                 string
 }
 
 // DSUBSubscribeResponse is an IHE DSUB Subscribe Message compliant struct
@@ -84,7 +79,7 @@ type DSUBCancel struct {
 	Cancel_Template string
 }
 
-// DSUBAck struct provides method dsubAck.NewEvent() to create and send a DSUB Ack SOAP messge to IHE DSUB Broker
+// DSUBAck struct provides method dsubAck.NewEvent() to create and send a DSUB Ack SOAP message to IHE DSUB Broker
 type DSUBAck struct {
 	BrokerURL    string
 	Request      []byte
@@ -197,7 +192,7 @@ type DSUB_Interface interface {
 	newEvent() error
 }
 
-func NewEvent(i DSUB_Interface) error {
+func New_Transaction(i DSUB_Interface) error {
 	return i.newEvent()
 }
 
@@ -206,9 +201,9 @@ func NewEvent(i DSUB_Interface) error {
 // A DSUB ack response is always sent back to the DSUB broker regardless of success
 // If no subscriptions are found a DSUB cancel message is sent to the DSUB Broker
 func (i *DSUBEvent) newEvent() error {
-	log.Printf("Processing DSUB Broker Notfy Message\n%s", i.Message)
+	log.Printf("Processing DSUB Notfy Message\n%s", i.Message)
 	i.Response = i.DSUB_Ack_Template
-	if err := i.NewDSUBNotifyMessage(); err == nil {
+	if err := i.newDSUBNotifyMessage(); err == nil {
 		if i.Event.BrokerRef == "" {
 			log.Println("no subscription ref found in notification message")
 			return nil
@@ -219,7 +214,6 @@ func (i *DSUBEvent) newEvent() error {
 			log.Println("no pid found in notification message")
 			return nil
 		}
-		tukdbint.NewDBEvent(&i.TUK_DB_Connection)
 		log.Printf("Checking for TUK Event subscriptions with Broker Ref = %s", i.Event.BrokerRef)
 		tukdbSub := tukdbint.Subscription{BrokerRef: i.Event.BrokerRef}
 		tukdbSubs := tukdbint.Subscriptions{Action: tukcnst.SELECT}
@@ -267,7 +261,7 @@ func (i *DSUBEvent) newEvent() error {
 					UUID:            tukutil.NewUuid(),
 					Cancel_Template: i.DSUB_Cancel_Template,
 				}
-				if err := dsubCancel.NewEvent(); err != nil {
+				if err := dsubCancel.newEvent(); err != nil {
 					log.Println(err.Error())
 				}
 			}
@@ -338,7 +332,7 @@ func (i *DSUBEvent) initEvent() {
 }
 
 // NewDSUBNotifyMessage creates an IHE DSUB Notify message struc from the notfy element in the i.Message
-func (i *DSUBEvent) NewDSUBNotifyMessage() error {
+func (i *DSUBEvent) newDSUBNotifyMessage() error {
 	dsubNotify := DSUBNotifyMessage{}
 	if i.Message == "" {
 		return errors.New("message is empty")
@@ -377,7 +371,7 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 }
 
 // (i *DSUBCancel) NewEvent() creates an IHE DSUB cancel message and sends it to the DSUB broker
-func (i *DSUBCancel) NewEvent() error {
+func (i *DSUBCancel) newEvent() error {
 	tmplt, err := template.New(tukcnst.CANCEL).Funcs(tukutil.TemplateFuncMap()).Parse(i.Cancel_Template)
 	if err != nil {
 		log.Println(err.Error())
