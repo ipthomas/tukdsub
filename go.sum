@@ -26,6 +26,8 @@ github.com/ipthomas/tukpdq v1.2.27 h1:pRngRuVHV+7jT2/yCar2x3mILaBXIOzLzNWoRJXwh0
 github.com/ipthomas/tukpdq v1.2.27/go.mod h1:Y77FU/uNTW8eJxM79eSvBjyepJ8xNVq4/yLBDFjRZZs=
 github.com/ipthomas/tukpdq v1.2.28 h1:OmPeyks5v+lsDaa1cbpF4QS2gorgApY/8rLkx/kgD/M=
 github.com/ipthomas/tukpdq v1.2.28/go.mod h1:Y77FU/uNTW8eJxM79eSvBjyepJ8xNVq4/yLBDFjRZZs=
+github.com/ipthomas/tukpdq v1.2.29 h1:p1UKZjBFpePrOXNz2iw8mguqETZr4Gszi1pBjIssqmM=
+github.com/ipthomas/tukpdq v1.2.29/go.mod h1:hublA1pWA83DUrXstmdPU45MwTI3m+yM59cpQdJqHbs=
 github.com/ipthomas/tukutil v1.2.3 h1:GyPuELTeQSmR+ilypuRWl9z7P7Dh3HqpPevsdD6ZgEg=
 github.com/ipthomas/tukutil v1.2.3/go.mod h1:9CxRQbriuzSO57l+xpcWPdlEbEI2uf+jlOYoIgrldDU=
 github.com/ipthomas/tukutil v1.2.5 h1:umNgDeI1RuxAMN0r608oVqhzEOhRK+ikmP/ZAjVCp/E=

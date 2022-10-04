@@ -13,7 +13,7 @@ github.com/ipthomas/tukdbint
 # github.com/ipthomas/tukhttp v1.2.11
 ## explicit; go 1.19
 github.com/ipthomas/tukhttp
-# github.com/ipthomas/tukpdq v1.2.28
+# github.com/ipthomas/tukpdq v1.2.29
 ## explicit; go 1.19
 github.com/ipthomas/tukpdq
 # github.com/ipthomas/tukutil v1.2.5
