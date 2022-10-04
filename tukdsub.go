@@ -190,7 +190,9 @@ func (i *DSUBEvent) newEvent() error {
 			log.Printf("Processing Broker Notfy Message\n%s", i.EventMessage)
 			i.processBrokerEventMessage()
 		}
-		tukdbint.DBConn.Close()
+		if i.DBConnection.DB_URL == "" {
+			tukdbint.DBConn.Close()
+		}
 	}
 	return err
 }
