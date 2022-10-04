@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	cnst "github.com/ipthomas/tukcnst"
+	"github.com/ipthomas/tukcnst"
 	util "github.com/ipthomas/tukutil"
 )
 
@@ -79,7 +79,7 @@ func NewRequest(i TukHTTPInterface) error {
 func (i *ClientRequest) newRequest() error {
 	req := i.HttpRequest
 	req.ParseForm()
-	i.Act = req.FormValue(cnst.ACT)
+	i.Act = req.FormValue(tukcnst.ACT)
 	i.User = req.FormValue("user")
 	i.Org = req.FormValue("org")
 	i.Orgoid = util.GetCodeSystemVal(req.FormValue("org"))
@@ -95,11 +95,11 @@ func (i *ClientRequest) newRequest() error {
 	i.ZIP = req.FormValue("zip")
 	i.Status = req.FormValue("status")
 	i.ID = util.GetIntFromString(req.FormValue("id"))
-	i.Task = req.FormValue(cnst.TASK)
-	i.Pathway = req.FormValue(cnst.PATHWAY)
+	i.Task = req.FormValue(tukcnst.TASK)
+	i.Pathway = req.FormValue(tukcnst.PATHWAY)
 	i.Version = util.GetIntFromString(req.FormValue("version"))
 	i.XDWKey = req.FormValue("xdwkey")
-	i.ReturnFormat = req.Header.Get(cnst.ACCEPT)
+	i.ReturnFormat = req.Header.Get(tukcnst.ACCEPT)
 	if len(i.XDWKey) > 12 {
 		i.Pathway, i.NHS = util.SplitXDWKey(i.XDWKey)
 	}
@@ -116,11 +116,11 @@ func (i *SOAPRequest) newRequest() error {
 		return err
 	}
 	if i.SOAPAction != "" {
-		req.Header.Set(cnst.SOAP_ACTION, i.SOAPAction)
+		req.Header.Set(tukcnst.SOAP_ACTION, i.SOAPAction)
 	}
-	req.Header.Set(cnst.CONTENT_TYPE, cnst.SOAP_XML)
-	req.Header.Set(cnst.ACCEPT, cnst.ALL)
-	req.Header.Set(cnst.CONNECTION, cnst.KEEP_ALIVE)
+	req.Header.Set(tukcnst.CONTENT_TYPE, tukcnst.SOAP_XML)
+	req.Header.Set(tukcnst.ACCEPT, tukcnst.ALL)
+	req.Header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
 	i.logRequest(req.Header)
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
@@ -137,11 +137,11 @@ func (i *PIXmRequest) newRequest() error {
 	if i.Timeout == 0 {
 		i.Timeout = 5
 	}
-	i.URL = i.URL + "?identifier=" + i.PID_OID + "%7C" + i.PID + cnst.FORMAT_JSON_PRETTY
-	req, _ := http.NewRequest(cnst.HTTP_GET, i.URL, nil)
-	req.Header.Set(cnst.CONTENT_TYPE, cnst.APPLICATION_JSON)
-	req.Header.Set(cnst.ACCEPT, cnst.ALL)
-	req.Header.Set(cnst.CONNECTION, cnst.KEEP_ALIVE)
+	i.URL = i.URL + "?identifier=" + i.PID_OID + "%7C" + i.PID + tukcnst.FORMAT_JSON_PRETTY
+	req, _ := http.NewRequest(tukcnst.HTTP_GET, i.URL, nil)
+	req.Header.Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
+	req.Header.Set(tukcnst.ACCEPT, tukcnst.ALL)
+	req.Header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
 	i.logRequest(req.Header)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 	defer cancel()
@@ -156,8 +156,8 @@ func (i *PIXmRequest) newRequest() error {
 	return err
 }
 func (i *CGLRequest) newRequest() error {
-	req, _ := http.NewRequest(cnst.HTTP_GET, i.Request, nil)
-	req.Header.Set(cnst.ACCEPT, cnst.APPLICATION_JSON)
+	req, _ := http.NewRequest(tukcnst.HTTP_GET, i.Request, nil)
+	req.Header.Set(tukcnst.ACCEPT, tukcnst.APPLICATION_JSON)
 	req.Header.Set("X-API-KEY", i.X_Api_Key)
 	i.logRequest(req.Header)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5)*time.Second)
@@ -180,8 +180,8 @@ func (i *AWS_APIRequest) newRequest() error {
 	var req *http.Request
 	var resp *http.Response
 	client := &http.Client{}
-	if req, err = http.NewRequest(strings.ToUpper(i.Act), i.URL+i.Resource, bytes.NewBuffer(i.Body)); err == nil {
-		req.Header.Add(cnst.CONTENT_TYPE, cnst.APPLICATION_JSON_CHARSET_UTF_8)
+	if req, err = http.NewRequest(http.MethodPost, i.URL+i.Resource, bytes.NewBuffer(i.Body)); err == nil {
+		req.Header.Add(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON_CHARSET_UTF_8)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 		defer cancel()
 		i.logRequest(req.Header)
@@ -198,7 +198,7 @@ func (i *AWS_APIRequest) newRequest() error {
 	return err
 }
 func (i *AWS_APIRequest) logRequest(headers http.Header) {
-	log.Println("HTTP " + strings.ToUpper(i.Act) + " Request Headers")
+	log.Println("HTTP POST Request Headers")
 	util.Log(headers)
 	log.Printf("HTTP Request\nURL = %s\nTimeout = %v\nMessage body\n%s", i.URL, i.Timeout, string(i.Body))
 }
