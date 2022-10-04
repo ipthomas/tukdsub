@@ -15,9 +15,10 @@ import (
 	"text/template"
 	"time"
 
-	cnst "github.com/ipthomas/tukcnst"
+	"encoding/base64"
 
 	"github.com/google/uuid"
+	"github.com/ipthomas/tukcnst"
 )
 
 var (
@@ -50,7 +51,19 @@ func TemplateFuncMap() template.FuncMap {
 		"completedate":   OHT_CompleteByDate,
 	}
 }
+func ReturnEncoded(s string) string {
+	return base64.StdEncoding.EncodeToString([]byte(s))
+}
+func ReturnDecoded(s string) string {
+	s = strings.ReplaceAll(s, " ", "+")
 
+	str, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		log.Println("Error Decoding Base64 String : " + err.Error())
+		return ""
+	}
+	return string(str)
+}
 func SimpleDateTime() string {
 	return Tuk_Year() + Tuk_Month() + Tuk_Day() + Tuk_Hour() + Tuk_Min() + Tuk_Sec()
 }
@@ -71,13 +84,13 @@ func WriteResponseHeaders(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Server", ServerName)
-		if r.Header.Get(cnst.ACCEPT) == cnst.APPLICATION_JSON {
-			w.Header().Set(cnst.CONTENT_TYPE, cnst.APPLICATION_JSON)
+		if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_JSON {
+			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
 		} else {
-			if r.Header.Get(cnst.ACCEPT) == cnst.APPLICATION_XML {
-				w.Header().Set(cnst.CONTENT_TYPE, cnst.APPLICATION_XML)
+			if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_XML {
+				w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_XML)
 			} else {
-				w.Header().Set(cnst.CONTENT_TYPE, cnst.TEXT_HTML)
+				w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.TEXT_HTML)
 			}
 
 		}

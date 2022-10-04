@@ -150,6 +150,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"text/template"
@@ -160,24 +161,157 @@ import (
 )
 
 type PDQQuery struct {
-	Server       string
-	Server_URL   string
-	NHS_ID       string
-	NHS_OID      string
-	MRN_ID       string
-	MRN_OID      string
-	REG_ID       string
-	REG_OID      string
-	Timeout      int64
-	Used_PID     string
-	Used_PID_OID string
-	Request      []byte
-	Response     []byte
-	StatusCode   int
-	Count        int
-	Patients     []PIXPatient
+	Server_Mode     string           `json:",omitempty"`
+	Server_URL      string           `json:",omitempty"`
+	CGL_X_Api_Key   string           `json:",omitempty"`
+	NHS_ID          string           `json:",omitempty"`
+	NHS_OID         string           `json:",omitempty"`
+	MRN_ID          string           `json:",omitempty"`
+	MRN_OID         string           `json:",omitempty"`
+	REG_ID          string           `json:",omitempty"`
+	REG_OID         string           `json:",omitempty"`
+	Timeout         int64            `json:",omitempty"`
+	Cache           bool             `json:",omitempty"`
+	Used_PID        string           `json:",omitempty"`
+	Used_PID_OID    string           `json:",omitempty"`
+	Request         []byte           `json:",omitempty"`
+	Response        []byte           `json:",omitempty"`
+	StatusCode      int              `json:",omitempty"`
+	Count           int              `json:",omitempty"`
+	PDQv3Response   *PDQv3Response   `json:",omitempty"`
+	PIXv3Response   *PIXv3Response   `json:",omitempty"`
+	PIXmResponse    *PIXmResponse    `json:",omitempty"`
+	Patients        *[]TUKPatient    `json:",omitempty"`
+	CGLUserResponse *CGLUserResponse `json:",omitempty"`
 }
-
+type CGLUserResponse struct {
+	Data struct {
+		Client struct {
+			BasicDetails struct {
+				Address struct {
+					AddressLine1 string `json:"addressLine1,omitempty"`
+					AddressLine2 string `json:"addressLine2,omitempty"`
+					AddressLine3 string `json:"addressLine3,omitempty"`
+					AddressLine4 string `json:"addressLine4,omitempty"`
+					AddressLine5 string `json:"addressLine5,omitempty"`
+					PostCode     string `json:"postCode,omitempty"`
+				} `json:"address,omitempty"`
+				BirthDate                    string `json:"birthDate,omitempty"`
+				Disability                   string `json:"disability,omitempty"`
+				LastEngagementByCGLDate      string `json:"lastEngagementByCGLDate,omitempty"`
+				LastFaceToFaceEngagementDate string `json:"lastFaceToFaceEngagementDate,omitempty"`
+				LocalIdentifier              int    `json:"localIdentifier,omitempty"`
+				Name                         struct {
+					Family string `json:"family,omitempty"`
+					Given  string `json:"given,omitempty"`
+				} `json:"name,omitempty"`
+				NextCGLAppointmentDate string `json:"nextCGLAppointmentDate,omitempty"`
+				NhsNumber              string `json:"nhsNumber,omitempty"`
+				SexAtBirth             string `json:"sexAtBirth,omitempty"`
+			} `json:"basicDetails,omitempty"`
+			BbvInformation struct {
+				BbvTested        string `json:"bbvTested,omitempty"`
+				HepCLastTestDate string `json:"hepCLastTestDate,omitempty"`
+				HepCResult       string `json:"hepCResult,omitempty"`
+				HivPositive      string `json:"hivPositive,omitempty"`
+			} `json:"bbvInformation,omitempty"`
+			DrugTestResults struct {
+				DrugTestDate          string `json:"drugTestDate,omitempty"`
+				DrugTestSample        string `json:"drugTestSample,omitempty"`
+				DrugTestStatus        string `json:"drugTestStatus,omitempty"`
+				InstantOrConfirmation string `json:"instantOrConfirmation,omitempty"`
+				Results               struct {
+					Amphetamine     string `json:"amphetamine,omitempty"`
+					Benzodiazepine  string `json:"benzodiazepine,omitempty"`
+					Buprenorphine   string `json:"buprenorphine,omitempty"`
+					Cannabis        string `json:"cannabis,omitempty"`
+					Cocaine         string `json:"cocaine,omitempty"`
+					Eddp            string `json:"eddp,omitempty"`
+					Fentanyl        string `json:"fentanyl,omitempty"`
+					Ketamine        string `json:"ketamine,omitempty"`
+					Methadone       string `json:"methadone,omitempty"`
+					Methamphetamine string `json:"methamphetamine,omitempty"`
+					Morphine        string `json:"morphine,omitempty"`
+					Opiates         string `json:"opiates,omitempty"`
+					SixMam          string `json:"sixMam,omitempty"`
+					Tramadol        string `json:"tramadol,omitempty"`
+				} `json:"results,omitempty"`
+			} `json:"drugTestResults,omitempty"`
+			PrescribingInformation []string `json:"prescribingInformation,omitempty"`
+			RiskInformation        struct {
+				LastSelfReportedDate string `json:"lastSelfReportedDate,omitempty"`
+				MentalHealthDomain   struct {
+					AttemptedSuicide                            string `json:"attemptedSuicide,omitempty"`
+					CurrentOrPreviousSelfHarm                   string `json:"currentOrPreviousSelfHarm,omitempty"`
+					DiagnosedMentalHealthCondition              string `json:"diagnosedMentalHealthCondition,omitempty"`
+					FrequentLifeThreateningSelfHarm             string `json:"frequentLifeThreateningSelfHarm,omitempty"`
+					Hallucinations                              string `json:"hallucinations,omitempty"`
+					HospitalAdmissionsForMentalHealth           string `json:"hospitalAdmissionsForMentalHealth,omitempty"`
+					NoIdentifiedRisk                            string `json:"noIdentifiedRisk,omitempty"`
+					NotEngagingWithSupport                      string `json:"notEngagingWithSupport,omitempty"`
+					NotTakingPrescribedMedicationAsInstructed   string `json:"notTakingPrescribedMedicationAsInstructed,omitempty"`
+					PsychiatricOrPreviousCrisisTeamIntervention string `json:"psychiatricOrPreviousCrisisTeamIntervention,omitempty"`
+					Psychosis                                   string `json:"psychosis,omitempty"`
+					SelfReportedMentalHealthConcerns            string `json:"selfReportedMentalHealthConcerns,omitempty"`
+					ThoughtsOfSuicideOrSelfHarm                 string `json:"thoughtsOfSuicideOrSelfHarm,omitempty"`
+				} `json:"mentalHealthDomain,omitempty"`
+				RiskOfHarmToSelfDomain struct {
+					AssessedAsNotHavingMentalCapacity  string `json:"assessedAsNotHavingMentalCapacity,omitempty"`
+					BeliefTheyAreWorthless             string `json:"beliefTheyAreWorthless,omitempty"`
+					Hoarding                           string `json:"hoarding,omitempty"`
+					LearningDisability                 string `json:"learningDisability,omitempty"`
+					MeetsSafeguardingAdultsThreshold   string `json:"meetsSafeguardingAdultsThreshold,omitempty"`
+					NoIdentifiedRisk                   string `json:"noIdentifiedRisk,omitempty"`
+					OngoingConcernsRelatingToOwnSafety string `json:"ongoingConcernsRelatingToOwnSafety,omitempty"`
+					ProblemsMaintainingPersonalHygiene string `json:"problemsMaintainingPersonalHygiene,omitempty"`
+					ProblemsMeetingNutritionalNeeds    string `json:"problemsMeetingNutritionalNeeds,omitempty"`
+					RequiresIndependentAdvocacy        string `json:"requiresIndependentAdvocacy,omitempty"`
+					SelfNeglect                        string `json:"selfNeglect,omitempty"`
+				} `json:"riskOfHarmToSelfDomain,omitempty"`
+				SocialDomain struct {
+					FinancialProblems         string `json:"financialProblems,omitempty"`
+					HomelessRoughSleepingNFA  string `json:"homelessRoughSleepingNFA,omitempty"`
+					HousingAtRisk             string `json:"housingAtRisk,omitempty"`
+					NoIdentifiedRisk          string `json:"noIdentifiedRisk,omitempty"`
+					SociallyIsolatedNoSupport string `json:"sociallyIsolatedNoSupport,omitempty"`
+				} `json:"socialDomain,omitempty"`
+				SubstanceMisuseDomain struct {
+					ConfusionOrDisorientation string `json:"ConfusionOrDisorientation,omitempty"`
+					AdmissionToAandE          string `json:"admissionToAandE,omitempty"`
+					BlackoutOrSeizures        string `json:"blackoutOrSeizures,omitempty"`
+					ConcurrentUse             string `json:"concurrentUse,omitempty"`
+					HigherRiskDrinking        string `json:"higherRiskDrinking,omitempty"`
+					InjectedByOthers          string `json:"injectedByOthers,omitempty"`
+					Injecting                 string `json:"injecting,omitempty"`
+					InjectingInNeckOrGroin    string `json:"injectingInNeckOrGroin,omitempty"`
+					NoIdentifiedRisk          string `json:"noIdentifiedRisk,omitempty"`
+					PolyDrugUse               string `json:"polyDrugUse,omitempty"`
+					PreviousOverDose          string `json:"previousOverDose,omitempty"`
+					RecentPrisonRelease       string `json:"recentPrisonRelease,omitempty"`
+					ReducedTolerance          string `json:"reducedTolerance,omitempty"`
+					SharingWorks              string `json:"sharingWorks,omitempty"`
+					Speedballing              string `json:"speedballing,omitempty"`
+					UsingOnTop                string `json:"usingOnTop,omitempty"`
+				} `json:"substanceMisuseDomain,omitempty"`
+			} `json:"riskInformation,omitempty"`
+			SafeguardingInformation struct {
+				LastReviewDate     string `json:"lastReviewDate,omitempty"`
+				RiskHarmFromOthers string `json:"riskHarmFromOthers,omitempty"`
+				RiskToAdults       string `json:"riskToAdults,omitempty"`
+				RiskToChildrenOrYP string `json:"riskToChildrenOrYP,omitempty"`
+				RiskToSelf         string `json:"riskToSelf,omitempty"`
+			} `json:"safeguardingInformation,omitempty"`
+		} `json:"client,omitempty"`
+		KeyWorker struct {
+			LocalIdentifier int `json:"localIdentifier,omitempty"`
+			Name            struct {
+				Family string `json:"family,omitempty"`
+				Given  string `json:"given,omitempty"`
+			} `json:"name"`
+			Telecom string `json:"telecom,omitempty"`
+		} `json:"keyWorker,omitempty"`
+	} `json:"data,omitempty"`
+}
 type PDQv3Response struct {
 	XMLName xml.Name `xml:"Envelope"`
 	S       string   `xml:"S,attr"`
@@ -682,7 +816,7 @@ type PIXmResponse struct {
 		} `json:"resource"`
 	} `json:"entry"`
 }
-type PIXPatient struct {
+type TUKPatient struct {
 	PIDOID     string `json:"pidoid"`
 	PID        string `json:"pid"`
 	REGOID     string `json:"regoid"`
@@ -704,6 +838,11 @@ type PDQInterface interface {
 	pdq() error
 }
 
+var (
+	pat_cache = make(map[string][]byte)
+	pdq_cache = make(map[string]*[]TUKPatient)
+)
+
 func New_Transaction(i PDQInterface) error {
 	return i.pdq()
 }
@@ -711,7 +850,7 @@ func (i *PDQQuery) pdq() error {
 	if err := i.setPDQ_ID(); err != nil {
 		return err
 	}
-	return i.getPatient()
+	return i.setPatient()
 }
 func (i *PDQQuery) setPDQ_ID() error {
 	if i.Server_URL == "" {
@@ -745,68 +884,154 @@ func (i *PDQQuery) setPDQ_ID() error {
 	}
 	return nil
 }
-func (i *PDQQuery) getPatient() error {
+func (i *PDQQuery) setPatient() error {
+	if i.Cache && i.Server_Mode != tukcnst.PDQ_SERVER_TYPE_CGL {
+		if _, ok := pat_cache[i.Used_PID]; ok {
+			log.Printf("Cache entry found for Patient ID %s", i.Used_PID)
+			i.StatusCode = http.StatusOK
+			i.Response = pat_cache[i.Used_PID]
+			i.Patients = pdq_cache[i.Used_PID]
+			i.Count = len(*i.Patients)
+			return nil
+		}
+	}
 	var tmplt *template.Template
 	var err error
-	switch i.Server {
-	case tukcnst.PDQ_SERVER_TYPE_PIXV3:
-		if tmplt, err = template.New(tukcnst.PDQ_SERVER_TYPE_PIXV3).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_Template_PIX_V3_Request); err == nil {
+	i.StatusCode = http.StatusOK
+	switch i.Server_Mode {
+	case tukcnst.PDQ_SERVER_TYPE_CGL:
+		i.Request = []byte(i.Server_URL)
+		httpReq := tukhttp.CGLRequest{
+			Request:   i.Server_URL + i.NHS_ID,
+			X_Api_Key: i.CGL_X_Api_Key,
+		}
+		if err = tukhttp.NewRequest(&httpReq); err == nil {
+			if httpReq.StatusCode == http.StatusOK {
+				json.Unmarshal(httpReq.Response, &i.CGLUserResponse)
+				i.Count = 1
+			}
+		}
+		i.Response = httpReq.Response
+		i.StatusCode = httpReq.StatusCode
+	case tukcnst.PDQ_SERVER_TYPE_IHE_PIXV3:
+		if tmplt, err = template.New(tukcnst.PDQ_SERVER_TYPE_IHE_PIXV3).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_Template_PIX_V3_Request); err == nil {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest(tukcnst.SOAP_ACTION_PIXV3_Request); err == nil {
-					pdqrsp := PIXv3Response{}
-					if err = xml.Unmarshal(i.Response, &pdqrsp); err == nil {
-						if pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code != "AA" {
-							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code)
+				if err = i.newIHESOAPRequest(tukcnst.SOAP_ACTION_PIXV3_Request); err == nil {
+					if err = xml.Unmarshal(i.Response, &i.PIXv3Response); err == nil {
+						if i.PIXv3Response.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code != "AA" {
+							err = errors.New("acknowledgement code not equal aa, received " + i.PIXv3Response.Body.PRPAIN201310UV02.Acknowledgement.TypeCode.Code)
+						} else {
+							i.Count, _ = strconv.Atoi(i.PIXv3Response.Body.PRPAIN201310UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
+							if i.Count > 0 {
+								pat := TUKPatient{
+									PIDOID: i.MRN_OID,
+									PID:    i.MRN_ID,
+									REGOID: i.REG_OID,
+									REGID:  i.REG_ID,
+									NHSOID: i.NHS_OID,
+									NHSID:  i.NHS_ID,
+								}
+								pat.GivenName = i.PIXv3Response.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
+								pat.FamilyName = i.PIXv3Response.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
+								for _, pid := range i.PIXv3Response.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.ID {
+									switch pid.Root {
+									case i.REG_OID:
+										pat.REGID = pid.Extension
+									case i.NHS_OID:
+										pat.NHSID = pid.Extension
+									case i.MRN_OID:
+										pat.PID = pid.Extension
+										pat.PIDOID = i.MRN_OID
+									}
+								}
+								pats := []TUKPatient{}
+								pats = append(pats, pat)
+								if i.Cache {
+									pat_cache[i.Used_PID] = i.Response
+									pdq_cache[i.Used_PID] = &pats
+								}
+							}
 						}
-						i.Count, _ = strconv.Atoi(pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
-						pat := PIXPatient{}
-						pat.GivenName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
-						pat.FamilyName = pdqrsp.Body.PRPAIN201310UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
-						i.Patients = append(i.Patients, pat)
 					}
 				}
 			}
 		}
-	case tukcnst.PDQ_SERVER_TYPE_PDQV3:
-		if tmplt, err = template.New(tukcnst.PDQ_SERVER_TYPE_PDQV3).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_Template_PDQ_V3_Request); err == nil {
+	case tukcnst.PDQ_SERVER_TYPE_IHE_PDQV3:
+		if tmplt, err = template.New(tukcnst.PDQ_SERVER_TYPE_IHE_PDQV3).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_Template_PDQ_V3_Request); err == nil {
 			var b bytes.Buffer
 			if err = tmplt.Execute(&b, i); err == nil {
 				i.Request = b.Bytes()
-				if err = i.newTukSOAPRequest(tukcnst.SOAP_ACTION_PDQV3_Request); err == nil {
-					pdqrsp := PDQv3Response{}
-					if err = xml.Unmarshal(i.Response, &pdqrsp); err == nil {
-						if pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code != "AA" {
-							return errors.New("acknowledgement code not equal aa, received " + pdqrsp.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code)
+				if err = i.newIHESOAPRequest(tukcnst.SOAP_ACTION_PDQV3_Request); err == nil {
+					if err = xml.Unmarshal(i.Response, &i.PDQv3Response); err == nil {
+						if i.PDQv3Response.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code != "AA" {
+							err = errors.New("acknowledgement code not equal aa, received " + i.PDQv3Response.Body.PRPAIN201306UV02.Acknowledgement.TypeCode.Code)
+						} else {
+							i.Count, _ = strconv.Atoi(i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
+							if i.Count > 0 {
+								pat := TUKPatient{
+									PIDOID:     i.MRN_OID,
+									PID:        i.MRN_ID,
+									REGOID:     i.REG_OID,
+									REGID:      i.REG_ID,
+									NHSOID:     i.NHS_OID,
+									NHSID:      i.NHS_ID,
+									GivenName:  i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given,
+									FamilyName: i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family,
+									Gender:     i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.AdministrativeGenderCode.Code,
+									BirthDate:  i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.BirthTime.Value,
+									Street:     i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.StreetAddressLine,
+									City:       i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.City,
+									State:      i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.State,
+									Zip:        i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.PostalCode,
+								}
+								for _, pid := range i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.ID {
+									switch pid.Root {
+									case i.REG_OID:
+										pat.REGID = pid.Extension
+									case i.NHS_OID:
+										pat.NHSID = pid.Extension
+									case i.MRN_OID:
+										pat.PID = pid.Extension
+										pat.PIDOID = i.MRN_OID
+									}
+								}
+								pats := []TUKPatient{}
+								pats = append(pats, pat)
+								if i.Cache {
+									pat_cache[i.Used_PID] = i.Response
+									pdq_cache[i.Used_PID] = &pats
+								}
+							}
 						}
-						i.Count, _ = strconv.Atoi(pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
-						pat := PIXPatient{}
-						pat.GivenName = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given
-						pat.FamilyName = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family
-						pat.BirthDate = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.BirthTime.Value
-						pat.Zip = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.PostalCode
-						pat.City = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.City
-						pat.State = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.State
-						pat.Street = pdqrsp.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.StreetAddressLine
-						i.Patients = append(i.Patients, pat)
 					}
 				}
 			}
 		}
-	case tukcnst.PDQ_SERVER_TYPE_PIXM:
-		if err = i.newTukHttpRequest(); err == nil {
+	case tukcnst.PDQ_SERVER_TYPE_IHE_PIXM:
+		i.Request = []byte(i.Server_URL)
+		httpReq := tukhttp.PIXmRequest{
+			URL:     i.Server_URL,
+			PID_OID: i.Used_PID_OID,
+			PID:     i.Used_PID,
+			Timeout: i.Timeout,
+		}
+		err = tukhttp.NewRequest(&httpReq)
+		i.Response = httpReq.Response
+		i.StatusCode = httpReq.StatusCode
+		if err == nil {
 			if strings.Contains(string(i.Response), "Error") {
 				err = errors.New(string(i.Response))
 			} else {
-				pdqrsp := PIXmResponse{}
-				if err := json.Unmarshal(i.Response, &pdqrsp); err == nil {
-					log.Printf("%v Patient Entries in Response", pdqrsp.Total)
-					i.Count = pdqrsp.Total
+				if err := json.Unmarshal(i.Response, &i.PIXmResponse); err == nil {
+					log.Printf("%v Patient Entries in Response", i.PIXmResponse.Total)
+					i.Count = i.PIXmResponse.Total
 					if i.Count > 0 {
-						for cnt := 0; cnt < len(pdqrsp.Entry); cnt++ {
-							rsppat := pdqrsp.Entry[cnt]
-							tukpat := PIXPatient{}
+						pats := []TUKPatient{}
+						for cnt := 0; cnt < len(i.PIXmResponse.Entry); cnt++ {
+							rsppat := i.PIXmResponse.Entry[cnt]
+							tukpat := TUKPatient{}
 							for _, id := range rsppat.Resource.Identifier {
 								if id.System == tukcnst.URN_OID_PREFIX+i.REG_OID {
 									tukpat.REGID = id.Value
@@ -830,7 +1055,6 @@ func (i *PDQQuery) getPatient() error {
 									gn = gn + n + " "
 								}
 							}
-
 							tukpat.GivenName = strings.TrimSuffix(gn, " ")
 							tukpat.FamilyName = rsppat.Resource.Name[0].Family
 							tukpat.BirthDate = strings.ReplaceAll(rsppat.Resource.BirthDate, "-", "")
@@ -847,11 +1071,13 @@ func (i *PDQQuery) getPatient() error {
 								tukpat.City = rsppat.Resource.Address[0].City
 								tukpat.Country = rsppat.Resource.Address[0].Country
 							}
-							i.Patients = append(i.Patients, tukpat)
+							pats = append(pats, tukpat)
 							log.Printf("Added Patient %s to response", tukpat.NHSID)
 						}
-					} else {
-						log.Println("patient is not registered")
+						if i.Cache {
+							pat_cache[i.Used_PID] = i.Response
+							pdq_cache[i.Used_PID] = &pats
+						}
 					}
 				}
 			}
@@ -862,20 +1088,7 @@ func (i *PDQQuery) getPatient() error {
 	}
 	return err
 }
-func (i *PDQQuery) newTukHttpRequest() error {
-	httpReq := tukhttp.PIXmRequest{
-		URL:     i.Server_URL,
-		PID_OID: i.Used_PID_OID,
-		PID:     i.Used_PID,
-		Timeout: i.Timeout,
-	}
-	err := tukhttp.NewRequest(&httpReq)
-	i.Request = []byte(httpReq.URL)
-	i.Response = httpReq.Response
-	i.StatusCode = httpReq.StatusCode
-	return err
-}
-func (i *PDQQuery) newTukSOAPRequest(soapaction string) error {
+func (i *PDQQuery) newIHESOAPRequest(soapaction string) error {
 	httpReq := tukhttp.SOAPRequest{
 		URL:        i.Server_URL,
 		SOAPAction: soapaction,

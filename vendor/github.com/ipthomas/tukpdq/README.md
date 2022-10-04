@@ -6,26 +6,30 @@ There is currently no authentication implemented. The github.com/ipthomas/tukhtt
 Struct PDQQuery implements the tukpdq.PDQ interface
 
 	type PDQQuery struct {
-	Server     string
-	MRN_ID     string
-	MRN_OID    string
-	NHS_ID     string
-	NHS_OID    string
-	REG_ID     string
-	REG_OID    string
-	Server_URL string
-	Timeout    int64
-	Used_PID   string
-	Request    []byte
-	Response   []byte
-	StatusCode int
-	Count      int
-	Used_ID     string
-	Patients   []PIXPatient `json:"patients"`
-}
+		Server       string
+		Server_URL   string
+		NHS_ID       string
+		NHS_OID      string
+		MRN_ID       string
+		MRN_OID      string
+		REG_ID       string
+		REG_OID      string
+		Timeout      int64
+		Cache        bool
+		RspType      string
+		Used_PID     string
+		Used_PID_OID string
+		Request      []byte
+		Response     []byte
+		StatusCode   int
+		Count        int
+		Patients     []PIXPatient
+	}
 	Server must be set to either "pixm" to perform a IHE PIXm query or "pixv3" to perform an IHE PIXv3 query or "pdqv3" to perform an IHE PDQv3 query. The github.com/ipthomas/tukcnst provides constants for each of the valid Server values i.e. tukcnst.PIXm, tukcnst.PIXv3, tukcnst.PDQv3, or you can just use strings!
 	
-	A patient identifier is required for use in the PDQ. This can be either the MRN id along with the associated OID or the NHS ID or the XDS regional ID
+	
+	A patient identifier is required for use in the PDQ. Only one id needs to be provided, not all id's are needed!!
+		i.e. This can be either the MRN id along with the associated MRN OID or the NHS ID or the XDS regional ID. The default nhs oid will be used if not provided. The regional oid is always reguired even if not using the reg id in the pdq because when parsing the pdq response the reg oid is needed to identify the patient reg id.
 
 	 The REG_OID is the Regional/XDS OID and is required
 	 
@@ -33,11 +37,25 @@ Struct PDQQuery implements the tukpdq.PDQ interface
 
 	 Timeout is the http context timeout in seconds and is optional. Default is 5 secs
 
+	 Cache = "true" enables the caching of found patients for the lifetime of the lambda function. Default is false
+
+	 RspType sets the response type sent to the PDQ. 
+	 	If set to "bool" the response will be either true or false.
+		If set to "code" the response will be empty and the StatusCode will be either 200 if patient exists or 204 if not
+		Default is the reponse is empty if patient not found or the patient details if patient is found
+
 	 Used_ID will be set to the ID used for the query
+
+	 Used_OID will be set to the OID used for the query
 	 
-	 Count will equal the number of patients found matching the query
-	 Response will contain the PIXm response in []byte format
-	 StatusCode will contain the http response header statuscode
+	 Request will be set with the bytes of the request message
+
+	 Response will be set as determined by the RspType param. Descibed above 
+
+	 StatusCode will be set according to the RspType param.
+	 
+	 Count will equal the number of patients found matching the query. Hopefully just 1 !!
+
 	 []Patients will contain an array of PIXPatient structs containing all matched patients. Hopefully just 1 !!
 
 	type PIXPatient struct {
@@ -59,22 +77,19 @@ Struct PDQQuery implements the tukpdq.PDQ interface
 		Zip        string `json:"zip"`
 	}
 
-	Example usage:
+	Example usage as AWS Lambda function:
 		pdq := tukpdq.PDQQuery{
-		Server:     tukcnst.PIXm
-		NHS_ID:     "1111111111",
-		REG_OID:    "2.16.840.1.113883.2.1.3.31.2.1.1",
-		Server_URL: "http://spirit-test-01.tianispirit.co.uk:8081/SpiritPIXFhir/r4/Patient",
-	}
-	if err = tukpdq.PDQ(&pdq); err == nil {
-		if pdq.Count == 1 {
-			log.Printf("Patient %s %s is registered", pdq.Patients[0].GivenName, pdq.Patients[0].FamilyName)
-		} else {
-			log.Printf("Found %v Patients", pdq.Count)
+			Server:     os.Getenv(tukcnst.AWS_ENV_PDQ_SERVER_TYPE),
+			MRN_ID:     req.QueryStringParameters[tukcnst.QUERY_PARAM_MRN_ID],
+			MRN_OID:    req.QueryStringParameters[tukcnst.QUERY_PARAM_MRN_OID],
+			NHS_ID:     req.QueryStringParameters[tukcnst.QUERY_PARAM_NHS_ID],
+			NHS_OID:    os.Getenv(tukcnst.AWS_ENV_REG_OID),
+			REG_ID:     req.QueryStringParameters[tukcnst.QUERY_PARAM_REG_ID],
+			REG_OID:    os.Getenv(tukcnst.AWS_ENV_REG_OID),
+			Server_URL: os.Getenv(tukcnst.AWS_ENV_PDQ_SERVER_URL),
+			Timeout:    2,
 		}
-	} else {
-		log.Println(err.Error())
-	}
+	err = tukpdq.New_Transaction(&pdq)
 
 	Running the above example produces the following Log output:
 

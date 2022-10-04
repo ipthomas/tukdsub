@@ -13,6 +13,12 @@ import (
 	util "github.com/ipthomas/tukutil"
 )
 
+type CGLRequest struct {
+	Request    string
+	X_Api_Key  string
+	StatusCode int
+	Response   []byte
+}
 type PIXmRequest struct {
 	URL        string
 	PID_OID    string
@@ -149,6 +155,23 @@ func (i *PIXmRequest) newRequest() error {
 	i.logResponse()
 	return err
 }
+func (i *CGLRequest) newRequest() error {
+	req, _ := http.NewRequest(cnst.HTTP_GET, i.Request, nil)
+	req.Header.Set(cnst.ACCEPT, cnst.APPLICATION_JSON)
+	req.Header.Set("X-API-KEY", i.X_Api_Key)
+	i.logRequest(req.Header)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5)*time.Second)
+	defer cancel()
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	i.StatusCode = resp.StatusCode
+	i.Response, err = io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	i.logResponse()
+	return err
+}
 func (i *AWS_APIRequest) newRequest() error {
 	if i.Timeout == 0 {
 		i.Timeout = 5
@@ -195,6 +218,14 @@ func (i *PIXmRequest) logRequest(headers http.Header) {
 	util.Log(headers)
 	log.Printf("HTTP Request\nURL = %s\nTimeout = %v", i.URL, i.Timeout)
 }
+func (i *CGLRequest) logRequest(headers http.Header) {
+	log.Println("HTTP GET Request Headers")
+	util.Log(headers)
+	log.Printf("HTTP Request\nURL = %s - Timeout = %v", i.Request, 5)
+}
 func (i *PIXmRequest) logResponse() {
+	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
+}
+func (i *CGLRequest) logResponse() {
 	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
 }
