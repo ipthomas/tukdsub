@@ -175,8 +175,7 @@ func New_Transaction(i DSUB_Interface) error {
 
 func (i *DSUBEvent) newEvent() error {
 	var err error
-	dbconn := i.DBConnection
-	if err = tukdbint.NewDBEvent(&dbconn); err == nil {
+	if err = tukdbint.NewDBEvent(&i.DBConnection); err == nil {
 		switch i.Action {
 		case tukcnst.SELECT:
 			log.Printf("Processing Select Subscriptions for Pathway %s", i.Pathway)
