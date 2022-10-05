@@ -114,8 +114,6 @@ func NewDBEvent(i TUK_DB_Interface) error {
 	return i.newEvent()
 }
 
-// functions for mysql DB access via DSN
-
 func (i *TukDBConnection) newEvent() error {
 	var err error
 	if i.DB_URL != "" {
@@ -168,6 +166,8 @@ func (i *TukDBConnection) newEvent() error {
 
 	return err
 }
+
+// functions for mysql DB access via DSN
 func (i *Subscriptions) newEvent() error {
 	if DB_URL != "" {
 		return i.newAWSEvent()

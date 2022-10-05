@@ -187,7 +187,7 @@ func (i *DSUBEvent) newEvent() error {
 			log.Println("Processing Cancel Subscriptions")
 			err = i.cancelSubscriptions()
 		default:
-			log.Printf("Processing Broker Notfy Message\n%s", i.EventMessage)
+			log.Printf("Processing Broker Notify Message\n%s", i.EventMessage)
 			i.processBrokerEventMessage()
 		}
 		if i.DBConnection.DB_URL == "" {
@@ -374,44 +374,36 @@ func (i *DSUBEvent) cancelSubscriptions() error {
 
 // (i *DSUBSubscribe) NewEvent() creates an IHE DSUB Subscribe message and sends it to the DSUB broker
 func (i *DSUBEvent) createSubscriptions() error {
+	type subreq struct {
+		BrokerURL   string
+		ConsumerURL string
+		Topic       string
+		Expression  string
+	}
 	i.Subs = tukdbint.Subscriptions{Action: i.Action}
 	for _, expression := range i.Expressions {
 		log.Printf("Checking for existing Subscriptions for Expression %s", expression)
 		expressionSubs := tukdbint.Subscriptions{Action: tukcnst.SELECT}
-		expressionSub := tukdbint.Subscription{Expression: expression}
+		expressionSub := tukdbint.Subscription{Pathway: i.Pathway, Topic: tukcnst.DSUB_TOPIC_TYPE_CODE, Expression: expression}
 		expressionSubs.Subscriptions = append(expressionSubs.Subscriptions, expressionSub)
 		if err := tukdbint.NewDBEvent(&expressionSubs); err != nil {
 			return err
 		}
-		if expressionSubs.Count > 0 {
-			log.Printf("Found %v Subscriptions for Expression %s", expressionSubs.Count, expression)
-			pwyexpSubFound := false
-			for _, sub := range expressionSubs.Subscriptions {
-				if !pwyexpSubFound && sub.Id > 0 && sub.Pathway == i.Pathway {
-					i.Subs.Subscriptions = append(i.Subs.Subscriptions, sub)
-					i.Subs.Count = i.Subs.Count + 1
-					if i.Subs.LastInsertId < int64(sub.Id) {
-						i.Subs.LastInsertId = int64(sub.Id)
-					}
-					pwyexpSubFound = true
-				}
-			}
-			if !pwyexpSubFound {
-				tukSubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
-				tukSub := expressionSubs.Subscriptions[1]
-				tukSub.Pathway = i.Pathway
-				tukSubs.Subscriptions = append(tukSubs.Subscriptions, tukSub)
-				if err := tukdbint.NewDBEvent(&tukSubs); err != nil {
-					return err
-				}
-				i.Subs.Subscriptions = append(i.Subs.Subscriptions, tukSubs.Subscriptions[1])
-				if i.Subs.LastInsertId < int64(tukSubs.Subscriptions[1].Id) {
-					i.Subs.LastInsertId = int64(tukSubs.Subscriptions[1].Id)
-				}
-				i.Subs.Count = i.Subs.Count + 1
+		if expressionSubs.Count == 1 {
+			log.Printf("Found %v Subscription for Pathway %s Topic %s Expression %s", expressionSubs.Count, i.Pathway, tukcnst.DSUB_TOPIC_TYPE_CODE, expression)
+			i.Subs.Subscriptions = append(i.Subs.Subscriptions, expressionSubs.Subscriptions[1])
+			i.Subs.Count = i.Subs.Count + 1
+			if i.Subs.LastInsertId < int64(expressionSubs.Subscriptions[1].Id) {
+				i.Subs.LastInsertId = int64(expressionSubs.Subscriptions[1].Id)
 			}
 		} else {
-			brokerSub := tukdbint.Subscription{Topic: tukcnst.DSUB_TOPIC_TYPE_CODE, Expression: expression}
+			log.Printf("No Subscription for Pathway %s Topic %s Expression %s found", i.Pathway, tukcnst.DSUB_TOPIC_TYPE_CODE, expression)
+			brokerSub := subreq{
+				BrokerURL:   i.BrokerURL,
+				ConsumerURL: i.ConsumerURL,
+				Topic:       tukcnst.DSUB_TOPIC_TYPE_CODE,
+				Expression:  expression,
+			}
 			tmplt, err := template.New(tukcnst.SUBSCRIBE).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_TEMPLATE_DSUB_SUBSCRIBE)
 			if err != nil {
 				log.Println(err.Error())
@@ -428,6 +420,7 @@ func (i *DSUBEvent) createSubscriptions() error {
 				SOAPAction: tukcnst.SOAP_ACTION_SUBSCRIBE_REQUEST,
 				Body:       b.Bytes(),
 			}
+			log.Printf("Sending Subscribe Request to DSUB Broker %s", i.BrokerURL)
 			err = tukhttp.NewRequest(&soapReq)
 			if err != nil {
 				log.Println(err.Error())
@@ -439,12 +432,16 @@ func (i *DSUBEvent) createSubscriptions() error {
 				log.Println(err.Error())
 				return err
 			}
-			brokerSub.BrokerRef = subrsp.Body.SubscribeResponse.SubscriptionReference.Address
-			log.Printf("Broker Response. Broker Ref :  %s", brokerSub.BrokerRef)
-			if brokerSub.BrokerRef != "" {
-				brokerSub.Pathway = i.Pathway
+			newSub := tukdbint.Subscription{}
+			newSub.BrokerRef = subrsp.Body.SubscribeResponse.SubscriptionReference.Address
+			log.Printf("Set Broker Ref =  %s", newSub.BrokerRef)
+			if newSub.BrokerRef != "" {
+				newSub.Pathway = i.Pathway
+				newSub.Expression = brokerSub.Expression
+				newSub.Topic = tukcnst.DSUB_TOPIC_TYPE_CODE
 				newsubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
-				newsubs.Subscriptions = append(newsubs.Subscriptions, brokerSub)
+				newsubs.Subscriptions = append(newsubs.Subscriptions, newSub)
+				log.Println("Registering Subscription with Event Service")
 				if err := tukdbint.NewDBEvent(&newsubs); err != nil {
 					log.Println(err.Error())
 					return err
@@ -454,6 +451,8 @@ func (i *DSUBEvent) createSubscriptions() error {
 					i.Subs.LastInsertId = int64(newsubs.Subscriptions[1].Id)
 				}
 				i.Subs.Count = i.Subs.Count + 1
+			} else {
+				log.Println("No Broker Reference found. Subscription not registered with Event Service")
 			}
 		}
 	}
