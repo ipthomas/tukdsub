@@ -446,7 +446,7 @@ func (i *DSUBEvent) createSubscriptions() error {
 					log.Println(err.Error())
 					return err
 				}
-				i.Subs.Subscriptions = append(i.Subs.Subscriptions, newsubs.Subscriptions[1])
+				i.Subs.Subscriptions = append(i.Subs.Subscriptions, newSub)
 				if i.Subs.LastInsertId < int64(newsubs.Subscriptions[1].Id) {
 					i.Subs.LastInsertId = int64(newsubs.Subscriptions[1].Id)
 				}
