@@ -175,24 +175,19 @@ func New_Transaction(i DSUB_Interface) error {
 
 func (i *DSUBEvent) newEvent() error {
 	var err error
-	if err = tukdbint.NewDBEvent(&i.DBConnection); err == nil {
-		switch i.Action {
-		case tukcnst.SELECT:
-			log.Printf("Processing Select Subscriptions for Pathway %s", i.Pathway)
-			err = i.selectSubscriptions()
-		case tukcnst.CREATE:
-			log.Println("Processing Create Subscriptions")
-			err = i.createSubscriptions()
-		case tukcnst.CANCEL:
-			log.Println("Processing Cancel Subscriptions")
-			err = i.cancelSubscriptions()
-		default:
-			log.Printf("Processing Broker Notify Message\n%s", i.EventMessage)
-			i.processBrokerEventMessage()
-		}
-		if i.DBConnection.DB_URL == "" {
-			tukdbint.DBConn.Close()
-		}
+	switch i.Action {
+	case tukcnst.SELECT:
+		log.Printf("Processing Select Subscriptions for Pathway %s", i.Pathway)
+		err = i.selectSubscriptions()
+	case tukcnst.CREATE:
+		log.Println("Processing Create Subscriptions")
+		err = i.createSubscriptions()
+	case tukcnst.CANCEL:
+		log.Println("Processing Cancel Subscriptions")
+		err = i.cancelSubscriptions()
+	default:
+		log.Printf("Processing Broker Notify Message\n%s", i.EventMessage)
+		i.processBrokerEventMessage()
 	}
 	return err
 }
