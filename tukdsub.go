@@ -443,8 +443,8 @@ func (i *DSUBEvent) createSubscriptions() error {
 						return err
 					}
 					i.Subs.Subscriptions = append(i.Subs.Subscriptions, newSub)
-					if i.Subs.LastInsertId < int64(newsubs.Subscriptions[1].Id) {
-						i.Subs.LastInsertId = int64(newsubs.Subscriptions[1].Id)
+					if i.Subs.LastInsertId < int64(newSub.Id) {
+						i.Subs.LastInsertId = int64(newSub.Id)
 					}
 					i.Subs.Count = i.Subs.Count + 1
 				} else {
