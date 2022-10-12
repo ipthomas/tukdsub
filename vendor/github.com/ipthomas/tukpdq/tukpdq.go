@@ -151,6 +151,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -170,6 +171,15 @@ type PDQQuery struct {
 	MRN_OID         string           `json:",omitempty"`
 	REG_ID          string           `json:",omitempty"`
 	REG_OID         string           `json:",omitempty"`
+	GivenName       string           `json:"givenname"`
+	FamilyName      string           `json:"familyname"`
+	BirthDate       string           `json:"birthdate"`
+	Gender          string           `json:"gender"`
+	Zip             string           `json:"zip"`
+	Street          string           `json:"street"`
+	Town            string           `json:"town"`
+	City            string           `json:"city"`
+	Country         string           `json:"country"`
 	Timeout         int64            `json:",omitempty"`
 	Cache           bool             `json:",omitempty"`
 	Used_PID        string           `json:",omitempty"`
@@ -840,7 +850,6 @@ type PDQInterface interface {
 
 var (
 	pat_cache = make(map[string][]byte)
-	pdq_cache = make(map[string]*[]TUKPatient)
 )
 
 func New_Transaction(i PDQInterface) error {
@@ -854,10 +863,12 @@ func (i *PDQQuery) pdq() error {
 }
 func (i *PDQQuery) setPDQ_ID() error {
 	if i.Server_URL == "" {
-		return errors.New("invalid request - pix server url is not set")
+		return errors.New("invalid request - pdq server url is not set")
 	}
 	if i.REG_OID == "" {
-		return errors.New("invalid request - reg oid is not set")
+		if os.Getenv(tukcnst.XDSDOMAIN) == "" {
+			return errors.New("invalid request - reg oid is not set")
+		}
 	}
 	if i.Timeout == 0 {
 		i.Timeout = 5
@@ -890,8 +901,6 @@ func (i *PDQQuery) setPatient() error {
 			log.Printf("Cache entry found for Patient ID %s", i.Used_PID)
 			i.StatusCode = http.StatusOK
 			i.Response = pat_cache[i.Used_PID]
-			i.Patients = pdq_cache[i.Used_PID]
-			i.Count = len(*i.Patients)
 			return nil
 		}
 	}
@@ -946,11 +955,8 @@ func (i *PDQQuery) setPatient() error {
 										pat.PIDOID = i.MRN_OID
 									}
 								}
-								pats := []TUKPatient{}
-								pats = append(pats, pat)
 								if i.Cache {
 									pat_cache[i.Used_PID] = i.Response
-									pdq_cache[i.Used_PID] = &pats
 								}
 							}
 						}
@@ -970,38 +976,18 @@ func (i *PDQQuery) setPatient() error {
 						} else {
 							i.Count, _ = strconv.Atoi(i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.QueryAck.ResultTotalQuantity.Value)
 							if i.Count > 0 {
-								pat := TUKPatient{
-									PIDOID:     i.MRN_OID,
-									PID:        i.MRN_ID,
-									REGOID:     i.REG_OID,
-									REGID:      i.REG_ID,
-									NHSOID:     i.NHS_OID,
-									NHSID:      i.NHS_ID,
-									GivenName:  i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Given,
-									FamilyName: i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Name.Family,
-									Gender:     i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.AdministrativeGenderCode.Code,
-									BirthDate:  i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.BirthTime.Value,
-									Street:     i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.StreetAddressLine,
-									City:       i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.City,
-									State:      i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.State,
-									Zip:        i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.PatientPerson.Addr.PostalCode,
-								}
 								for _, pid := range i.PDQv3Response.Body.PRPAIN201306UV02.ControlActProcess.Subject.RegistrationEvent.Subject1.Patient.ID {
 									switch pid.Root {
 									case i.REG_OID:
-										pat.REGID = pid.Extension
+										i.REG_ID = pid.Extension
 									case i.NHS_OID:
-										pat.NHSID = pid.Extension
+										i.NHS_ID = pid.Extension
 									case i.MRN_OID:
-										pat.PID = pid.Extension
-										pat.PIDOID = i.MRN_OID
+										i.MRN_ID = pid.Extension
 									}
 								}
-								pats := []TUKPatient{}
-								pats = append(pats, pat)
 								if i.Cache {
 									pat_cache[i.Used_PID] = i.Response
-									pdq_cache[i.Used_PID] = &pats
 								}
 							}
 						}
@@ -1028,25 +1014,21 @@ func (i *PDQQuery) setPatient() error {
 					log.Printf("%v Patient Entries in Response", i.PIXmResponse.Total)
 					i.Count = i.PIXmResponse.Total
 					if i.Count > 0 {
-						pats := []TUKPatient{}
 						for cnt := 0; cnt < len(i.PIXmResponse.Entry); cnt++ {
 							rsppat := i.PIXmResponse.Entry[cnt]
-							tukpat := TUKPatient{}
 							for _, id := range rsppat.Resource.Identifier {
 								if id.System == tukcnst.URN_OID_PREFIX+i.REG_OID {
-									tukpat.REGID = id.Value
-									tukpat.REGOID = i.REG_OID
-									log.Printf("Set Reg ID %s %s", tukpat.REGID, tukpat.REGOID)
+									i.REG_ID = id.Value
+									log.Printf("Set Reg ID %s %s", i.REG_ID, i.REG_OID)
 								}
 								if id.Use == "usual" {
-									tukpat.PID = id.Value
-									tukpat.PIDOID = strings.Split(id.System, ":")[2]
-									log.Printf("Set PID %s %s", tukpat.PID, tukpat.PIDOID)
+									i.MRN_ID = id.Value
+									i.MRN_OID = strings.Split(id.System, ":")[2]
+									log.Printf("Set PID %s %s", i.MRN_ID, i.MRN_OID)
 								}
 								if id.System == tukcnst.URN_OID_PREFIX+i.NHS_OID {
-									tukpat.NHSID = id.Value
-									tukpat.NHSOID = i.NHS_OID
-									log.Printf("Set NHS ID %s %s", tukpat.NHSID, tukpat.NHSOID)
+									i.NHS_ID = id.Value
+									log.Printf("Set NHS ID %s %s", i.NHS_ID, i.NHS_OID)
 								}
 							}
 							gn := ""
@@ -1055,28 +1037,25 @@ func (i *PDQQuery) setPatient() error {
 									gn = gn + n + " "
 								}
 							}
-							tukpat.GivenName = strings.TrimSuffix(gn, " ")
-							tukpat.FamilyName = rsppat.Resource.Name[0].Family
-							tukpat.BirthDate = strings.ReplaceAll(rsppat.Resource.BirthDate, "-", "")
-							tukpat.Gender = rsppat.Resource.Gender
+							i.GivenName = strings.TrimSuffix(gn, " ")
+							i.FamilyName = rsppat.Resource.Name[0].Family
+							i.BirthDate = strings.ReplaceAll(rsppat.Resource.BirthDate, "-", "")
+							i.Gender = rsppat.Resource.Gender
 
 							if len(rsppat.Resource.Address) > 0 {
-								tukpat.Zip = rsppat.Resource.Address[0].PostalCode
+								i.Zip = rsppat.Resource.Address[0].PostalCode
 								if len(rsppat.Resource.Address[0].Line) > 0 {
-									tukpat.Street = rsppat.Resource.Address[0].Line[0]
+									i.Street = rsppat.Resource.Address[0].Line[0]
 									if len(rsppat.Resource.Address[0].Line) > 1 {
-										tukpat.Town = rsppat.Resource.Address[0].Line[1]
+										i.Town = rsppat.Resource.Address[0].Line[1]
 									}
 								}
-								tukpat.City = rsppat.Resource.Address[0].City
-								tukpat.Country = rsppat.Resource.Address[0].Country
+								i.City = rsppat.Resource.Address[0].City
+								i.Country = rsppat.Resource.Address[0].Country
 							}
-							pats = append(pats, tukpat)
-							log.Printf("Added Patient %s to response", tukpat.NHSID)
 						}
 						if i.Cache {
 							pat_cache[i.Used_PID] = i.Response
-							pdq_cache[i.Used_PID] = &pats
 						}
 					}
 				}
