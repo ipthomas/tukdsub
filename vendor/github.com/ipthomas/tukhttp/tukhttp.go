@@ -134,25 +134,31 @@ func (i *SOAPRequest) newRequest() error {
 	return err
 }
 func (i *PIXmRequest) newRequest() error {
+	var err error
+	var req *http.Request
 	if i.Timeout == 0 {
 		i.Timeout = 5
 	}
 	i.URL = i.URL + "?identifier=" + i.PID_OID + "%7C" + i.PID + tukcnst.FORMAT_JSON_PRETTY
-	req, _ := http.NewRequest(tukcnst.HTTP_GET, i.URL, nil)
-	req.Header.Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
-	req.Header.Set(tukcnst.ACCEPT, tukcnst.ALL)
-	req.Header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
-	i.logRequest(req.Header)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
-	defer cancel()
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil {
-		return err
+	if req, err = http.NewRequest(tukcnst.HTTP_GET, i.URL, nil); err == nil {
+		req.Header.Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
+		req.Header.Set(tukcnst.ACCEPT, tukcnst.ALL)
+		req.Header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
+		i.logRequest(req.Header)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
+		defer cancel()
+		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+		if err != nil {
+			return err
+		}
+		i.StatusCode = resp.StatusCode
+		if i.Response, err = io.ReadAll(resp.Body); err != nil {
+			log.Println(err.Error())
+		}
+		defer resp.Body.Close()
+		i.logResponse()
+		return nil
 	}
-	i.StatusCode = resp.StatusCode
-	i.Response, err = io.ReadAll(resp.Body)
-	defer resp.Body.Close()
-	i.logResponse()
 	return err
 }
 func (i *CGLRequest) newRequest() error {

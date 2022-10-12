@@ -3,11 +3,11 @@ module github.com/ipthomas/tukdsub
 go 1.19
 
 require (
-	github.com/ipthomas/tukcnst v1.2.12
-	github.com/ipthomas/tukdbint v1.2.6
-	github.com/ipthomas/tukhttp v1.2.11
-	github.com/ipthomas/tukpdq v1.2.29
-	github.com/ipthomas/tukutil v1.2.5
+	github.com/ipthomas/tukcnst v1.2.15
+	github.com/ipthomas/tukdbint v1.2.9
+	github.com/ipthomas/tukhttp v1.2.13
+	github.com/ipthomas/tukpdq v1.2.30
+	github.com/ipthomas/tukutil v1.2.7
 )
 
 require (

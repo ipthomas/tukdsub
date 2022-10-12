@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -78,28 +79,6 @@ func SplitXDWKey(xdwkey string) (string, string) {
 	}
 	log.Printf("Pathway = %s NHS ID = %s", pwy, nhs)
 	return pwy, nhs
-}
-
-func WriteResponseHeaders(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		w.Header().Set("Server", ServerName)
-		if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_JSON {
-			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
-		} else {
-			if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_XML {
-				w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_XML)
-			} else {
-				w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.TEXT_HTML)
-			}
-
-		}
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "accept, Content-Type")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-
-		fn(w, r)
-	}
 }
 
 // SetCodeSystem takes a map input and sets the codesystem map with the input
@@ -188,17 +167,6 @@ func Log(i interface{}) {
 	log.Println(string(b))
 }
 
-// returns unique id in format '1.2.40.0.13.1.1.3542466645.20211021090059143.32643'
-// idroot constant - 1.2.40.0.13.1.1.3542466645.
-// + datetime	   - 20211021090059143.
-// + 5 digit seed  - 32643
-// if state is maintained the seed is incremented after each call to newid() to ensure a unique id is generated.
-// If state is not maintained the `new` datetime will ensure a unique id is generated.
-func Newid() string {
-	id := SeedRoot + dt_yyyyMMddhhmmSSsss() + "." + GetStringFromInt(IdSeed)
-	IdSeed = IdSeed + 1
-	return id
-}
 func OHT_HasExpired(startdate string, htDate string) bool {
 	log.Printf("Calculating if Expired")
 	if expireDate := OHT_CompleteByDate(startdate, htDate); expireDate == "NA" {
@@ -454,6 +422,444 @@ func GetFolderFiles(folder string) ([]fs.DirEntry, error) {
 func getIdIncrementSeed(len int) int {
 	return GetIntFromString(Substr(GetStringFromInt(time.Now().Nanosecond()), 0, len))
 }
-func dt_yyyyMMddhhmmSSsss() string {
-	return Tuk_Year() + Tuk_Month() + Tuk_Day() + Tuk_Hour() + Tuk_Min() + Tuk_Sec() + strconv.Itoa(Tuk_MilliSec())
+func IsBrokerExpression(exp string) bool {
+	return strings.Contains(exp, "^^")
+}
+
+func GetTimeFromString(timestr string) time.Time {
+	time, err := time.Parse(time.RFC3339, timestr)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return time
+}
+
+func GetFutueDaysDate(startDate time.Time, days int) time.Time {
+	return startDate.AddDate(0, 0, days)
+}
+
+// getErrorMessage returns the error message within
+// the SOAP response or returns a generic error message
+func GetErrorMessage(message string) string {
+	if strings.Contains(message, "soap:Reason") {
+		var start = strings.Index(message, "<soap:Reason>") + 13
+		var end = strings.Index(message, "</soap:Reason>")
+		var xmlmessage string = message[start:end]
+		start = strings.Index(xmlmessage, ">") + 1
+		end = strings.Index(xmlmessage, "</soap")
+		return xmlmessage[start:end]
+	}
+
+	if strings.Contains(message, "faultstring") {
+		var start = strings.Index(message, "<faultstring>") + 13
+		var end = strings.Index(message, "</faultstring>")
+		return message[start:end]
+	}
+
+	return "Soap error reason not found."
+}
+
+// containsError checks to see if the supplied
+// message contains one of the two error tags
+func ContainsError(message string) bool {
+	if strings.Contains(message, "<soap:Fault>") {
+		return true
+	}
+	if strings.Contains(message, "<faultstring>") {
+		return true
+	}
+	return false
+}
+
+// getDocumentReturnList extracts the document
+// return list from the SOAP response message
+func GetDocumentReturnList(message string) string {
+	if strings.Contains(message, "<return>") {
+		var start = strings.Index(message, "<return>")
+		var end = strings.Index(message, "</return>") + 9
+		return message[start:end]
+	}
+	return message
+}
+
+func PrettyPrintDuration(duration time.Duration) string {
+	// rsp := strings.ReplaceAll(duration.String(), "h", "hours ")
+	// rsp = strings.ReplaceAll(rsp, "m", "mins ")
+	// rsp = rsp + "ecs"
+	rsp := ""
+	secs := int(duration.Seconds())
+	mins := secs / 60
+	hrs := mins / 60
+	days := hrs / 24
+	hrs = hrs % 24
+	mins = mins % 60
+	secs = secs % 60
+	// hrs := int(duration.Hours())
+	// mins := int(duration.Minutes()) - (hrs * 60)
+	// secs := int(duration.Seconds()) - (hrs * 60 * 60) - (mins * 60)
+	// days := 0
+	if hrs > 0 {
+		// if hrs > 23 {
+		// 	days = hrs / 24
+		// 	hrs = hrs % 24
+		// }
+		if days == 0 {
+			rsp = GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
+		}
+		if days == 1 {
+			rsp = GetStringFromInt(days) + " Day " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
+		}
+		if days > 1 {
+			rsp = GetStringFromInt(days) + " Days " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
+		}
+	} else {
+		rsp = GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins " + GetStringFromInt(secs) + " Secs"
+
+	}
+	return rsp
+}
+func DT_Day() string {
+	return fmt.Sprintf("%02d",
+		time.Now().Local().Day())
+}
+func DT_Hour() string {
+	return fmt.Sprintf("%02d",
+		time.Now().Local().Hour())
+}
+func DT_Min() string {
+	return fmt.Sprintf("%02d", time.Now().Local().Minute())
+}
+func DT_Sec() string {
+	return fmt.Sprintf("%02d",
+		time.Now().Local().Second())
+}
+func DT_MilliSec() int {
+	return GetMilliseconds()
+}
+func DT_yyyy_MM_dd() string {
+	return DT_Year() + "-" + DT_MM_dd()
+}
+func DT_yyyy_MM_dd_hh() string {
+	return DT_yyyy_MM_dd() + " " + DT_Hour()
+}
+func DT_yyyy_MM_dd_hh_mm() string {
+	return DT_yyyy_MM_dd_hh() + ":" + DT_Min()
+}
+func DT_yyyy_MM_dd_hh_mm_SS() string {
+	return DT_yyyy_MM_dd_hh_mm() + ":" + DT_Sec()
+}
+func DT_yyyy_MM_dd_hh_mm_SS_sss() string {
+	return DT_yyyy_MM_dd_hh_mm_SS() + "." + GetStringFromInt(DT_MilliSec())
+}
+func DT_yyyyMMddhhmmSSsss() string {
+	return DT_Year() + DT_Month() + DT_Hour() + DT_Min() + DT_Sec() + strconv.Itoa(DT_MilliSec())
+}
+func DT_SQL() string {
+	return DT_Year() + "-" + DT_Month() + "-" + DT_Day() + "T" + DT_Hour() + ":" + DT_Min() + ":" + DT_Sec()
+}
+func DT_SQL_Future_Year() string {
+	t := time.Now().Local().Add(time.Hour * time.Duration(8760))
+	t.AddDate(1, 0, 0)
+	return GetStringFromInt(t.Local().Year()) + "-" + GetStringFromInt(int(t.Local().Month())) + "-" + GetStringFromInt(t.Local().Day()) + "T" + GetStringFromInt(t.Local().Hour()) + ":" + GetStringFromInt(t.Local().Minute()) + ":" + GetStringFromInt(t.Local().Second())
+}
+func DT_Zulu() string {
+	return DT_SQL() + "." + GetStringFromInt(DT_MilliSec()) + "Z"
+}
+func DT_Zulu_Future(future int64) string {
+	t := time.Now().Local().Add(time.Hour*time.Duration(0) + time.Minute*time.Duration(future) + time.Second*time.Duration(0))
+	return GetStringFromInt(t.Local().Year()) + "-" + GetStringFromInt(int(t.Local().Month())) + "-" + GetStringFromInt(t.Local().Day()) + "T" + GetStringFromInt(t.Local().Hour()) + ":" + GetStringFromInt(t.Local().Minute()) + ":" + GetStringFromInt(t.Local().Second()) + "." + GetStringFromInt(GetMilliseconds()) + "Z"
+}
+func DT_Zulu_Future_Year() string {
+	t := time.Now().Local().Add(time.Hour * time.Duration(8760))
+	t.AddDate(1, 0, 0)
+	return GetStringFromInt(t.Local().Year()) + "-" + GetStringFromInt(int(t.Local().Month())) + "-" + GetStringFromInt(t.Local().Day()) + "T" + GetStringFromInt(t.Local().Hour()) + ":" + GetStringFromInt(t.Local().Minute()) + ":" + GetStringFromInt(t.Local().Second()) + "." + GetStringFromInt(GetMilliseconds()) + "Z"
+}
+func DT_Kitchen() string {
+	return time.Now().Format(time.Kitchen)
+}
+func DT_Unix() string {
+	return time.Now().Format(time.UnixDate)
+}
+func DT_ANSIC() string {
+	return time.Now().Format(time.ANSIC)
+}
+func DT_Stamp() string {
+	return time.Now().Format(time.Stamp)
+}
+func DT_Date() string {
+	return time.Now().Format("Jan 2 2006")
+}
+func DT_Time() string {
+	return time.Now().Format("15:04:05")
+}
+func DT_EPOCH() string {
+	timestamp := time.Now().Unix()
+	return fmt.Sprintln(timestamp)
+}
+func GetMilliseconds() int {
+	return GetIntFromString(Substr(GetStringFromInt(time.Now().Nanosecond()), 0, 3))
+}
+
+func Newdatetime() string {
+	return DT_yyyy_MM_dd_hh_mm_SS()
+}
+func Newyearfuturezulu() string {
+	return DT_Zulu_Future_Year()
+}
+func Newzulu() string {
+	return DT_Zulu()
+}
+func New30mfutureyearzulu() string {
+	return DT_Zulu_Future(30)
+}
+func DT_MM_dd() string {
+	return DT_Month() + "-" + DT_Day()
+}
+
+func DT_Year() string {
+	return fmt.Sprintf("%d",
+		time.Now().Local().Year())
+}
+func GetIdIncrementSeed(len int) int {
+	return GetIntFromString(Substr(GetStringFromInt(time.Now().Nanosecond()), 0, len))
+}
+func DT_Month() string {
+	return fmt.Sprintf("%02d",
+		time.Now().Local().Month())
+}
+func Loadjsonfile(jfp string) *json.Decoder {
+	file, err := os.Open(jfp)
+	if err != nil {
+		log.Panic(jfp + " Unable to load file:-" + jfp + " - " + err.Error())
+	}
+	return json.NewDecoder(file)
+}
+func GetXdwConfigFiles(basepath string) (map[string][]byte, error) {
+	var xdwFiles = make(map[string][]byte)
+	var err error
+	var f *os.File
+	var fileInfo []fs.DirEntry
+	f, err = os.Open(basepath + "xdwconfig/")
+	if err != nil {
+		log.Println(err)
+		return xdwFiles, err
+	}
+	fileInfo, err = f.ReadDir(-1)
+	defer f.Close()
+	for _, file := range fileInfo {
+		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
+			xdwfile, err := os.ReadFile(basepath + "xdwconfig/" + file.Name())
+			if err != nil {
+				log.Println(err.Error())
+				return xdwFiles, err
+			}
+			log.Println("Loaded WF Def for Pathway : " + file.Name())
+			xdwFiles[file.Name()] = xdwfile
+		}
+	}
+
+	return xdwFiles, err
+}
+func GetHTMLWidgetFiles(basepath string) ([]string, error) {
+	var htmlWidgets []string
+	var err error
+	var f *os.File
+	var fileInfo []fs.DirEntry
+	f, err = os.Open(basepath + "templates/html/")
+	if err != nil {
+		log.Println(err)
+		return htmlWidgets, err
+	}
+	if fileInfo, err = f.ReadDir(-1); err != nil {
+		log.Println(err.Error())
+		return htmlWidgets, err
+	}
+	defer f.Close()
+	for _, file := range fileInfo {
+		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
+			tmplt, err := os.ReadFile(basepath + "templates/html/" + file.Name())
+			if err != nil {
+				log.Println(err.Error())
+				return htmlWidgets, err
+			}
+			log.Println("Loaded html template : " + file.Name())
+			htmlWidgets = append(htmlWidgets, string(tmplt))
+		}
+	}
+	return htmlWidgets, nil
+}
+func Minus(n1 int, n2 int) string {
+	log.Printf("Template called minus function(%v,%v) Returning %v", n1, n2, n1-n2)
+	return GetStringFromInt(n1 - n2)
+}
+
+func VALUE_LIKE(val string) string {
+	return "%" + val + "%"
+}
+func UploadFile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/html")
+	r.ParseMultipartForm(10)
+	file, handler, err := r.FormFile("myFile")
+	if err != nil {
+		fmt.Fprintf(w, "<h3 style='color:red'>Failed to Upload File : "+err.Error()+" : </h3>")
+		log.Println(err)
+		return
+	}
+	defer file.Close()
+	var nhsid = r.FormValue("nhs")
+	var pathway = r.FormValue("pathway")
+	if nhsid == "" {
+		fmt.Fprintf(w, "<h3 style='color=red'>No Patient NHS ID provided. Upload Terminated</h3>")
+		return
+	}
+	if pathway == "" {
+		fmt.Fprintf(w, "<h3 style='color=red'>No Pathway provided. Upload Terminated</h3>")
+		return
+	}
+	fmt.Fprintf(w, "<h3>Uploading File</h3>")
+	fmt.Fprintf(w, "<h3 style='color:green'>Uploading File</h3>")
+	log.Printf("Uploading File: %+v", handler.Filename)
+	fmt.Fprintf(w, "<h3 style='color:green'>File Size: %+v", handler.Size)
+	log.Printf("File Size: %+v", handler.Size)
+	log.Printf("MIME Header: %+v", handler.Header)
+
+	fn := "uploads/" + pathway + nhsid + "_" + handler.Filename
+	uploadFile, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(w, "<h3 style='color:red'>Failed to create File on Server : "+err.Error()+" : </h3>")
+		log.Println(err)
+		return
+	}
+	defer uploadFile.Close()
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		fmt.Fprintf(w, "<h3 style='color:red'>Failed to read file from client : "+err.Error()+" : </h3>")
+		log.Println(err)
+		return
+	}
+	uploadFile.Write(fileBytes)
+	fmt.Fprintf(w, "<h3 style='color:green'>Successfully Uploaded File</h3>")
+	log.Printf("Successfully Uploaded File: %+v", handler.Filename)
+	log.Println("Saved file to " + fn)
+}
+func WriteResponseHeaders(fn http.HandlerFunc, secure bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Server", "Tiani_Spirit_UK")
+		if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_XML {
+			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_XML)
+		} else if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_JSON {
+			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON)
+		} else if r.Header.Get(tukcnst.ACCEPT) == tukcnst.ALL {
+			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.TEXT_HTML)
+		} else {
+			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.TEXT_HTML)
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "accept, Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if secure {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		}
+		fn(w, r)
+	}
+}
+
+// returns unique id in format '1.2.40.0.13.1.1.3542466645.20211021090059143.32643'
+// idroot constant - 1.2.40.0.13.1.1.3542466645.
+// + datetime	   - 20211021090059143.
+// + 5 digit seed  - 32643
+// The seed is incremented after each call to newid().
+func Newid() string {
+	id := SeedRoot + DT_yyyyMMddhhmmSSsss() + "." + GetStringFromInt(IdSeed)
+	IdSeed = IdSeed + 1
+	return id
+}
+
+func GetServiceUrl(port int, scheme, host, url string) string {
+	return scheme + "://" + host + ":" + strconv.Itoa(port) + "/" + url
+}
+func GetGlypicon(tasktype string) string {
+	switch strings.ToUpper(tasktype) {
+	case "CPIS":
+		return "fa fa-medkit fa-2x"
+	case "TOC":
+		return "fa fa-ambulance fa-2x"
+	case "Transport":
+		return "fa fa-ambulance fa-2x"
+	default:
+		return "fa fa-user-md fa-2x"
+	}
+}
+func GetXMLNodeVal(message string, node string) string {
+	if strings.Contains(message, node) {
+		var nodeopen = "<" + node + ">"
+		var nodeclose = "</" + node + ">"
+		log.Println("Searching for value in : " + nodeopen + nodeclose)
+		var start = strings.Index(message, nodeopen) + len(nodeopen)
+		var end = strings.Index(message, nodeclose)
+		m := message[start:end]
+		log.Println("Returning value : " + m)
+		return m
+	}
+	log.Println("Message does not contain Node : " + node)
+	return ""
+}
+
+func ArrayContains(strs []string, str string) (int, bool) {
+	if len(strs) > 0 {
+		for s := range strs {
+			if strs[s] == str {
+				return s, true
+			}
+		}
+	}
+	return -1, false
+}
+func GetFileBytes(f string) ([]byte, error) {
+	file, err := os.Open(f)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer file.Close()
+	byteValue, _ := io.ReadAll(file)
+	return byteValue, nil
+}
+func GetXmlReturnNode(message string) string {
+	log.Println("Searching for <return> node in response message")
+
+	if strings.Contains(message, "<return>") {
+		var start = strings.Index(message, "<return>")
+		var end = strings.Index(message, "</return>") + 9
+		log.Println("Found Node <return>")
+		return message[start:end]
+	}
+	log.Println("Node <return> Not found. Returning message")
+	return message
+}
+func NotEmpty(params []string) bool {
+	for param := range params {
+		if params[param] == "" {
+			return false
+		}
+	}
+	return true
+}
+func SplitFhirOid(oid string) string {
+	if !strings.Contains(oid, ":") {
+		return oid
+	}
+
+	splitoid := strings.Split(oid, ":")
+	if len(splitoid) > 2 {
+		return splitoid[2]
+	}
+	return oid
+}
+func SplitExpression(exp string) string {
+	if !strings.Contains(exp, "^^") {
+		return exp
+	}
+	str := strings.Split(exp, "^^")[0]
+	return str
 }
