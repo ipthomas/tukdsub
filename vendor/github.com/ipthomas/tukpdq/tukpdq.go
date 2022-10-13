@@ -324,72 +324,85 @@ type CGLUserResponse struct {
 }
 type PDQv3Response struct {
 	XMLName xml.Name `xml:"Envelope"`
+	Text    string   `xml:",chardata"`
 	S       string   `xml:"S,attr"`
 	Env     string   `xml:"env,attr"`
 	Header  struct {
+		Text   string `xml:",chardata"`
 		Action struct {
+			Text  string `xml:",chardata"`
 			Xmlns string `xml:"xmlns,attr"`
-			S     string `xml:"S,attr"`
-			Env   string `xml:"env,attr"`
 		} `xml:"Action"`
 		MessageID struct {
+			Text  string `xml:",chardata"`
 			Xmlns string `xml:"xmlns,attr"`
-			S     string `xml:"S,attr"`
-			Env   string `xml:"env,attr"`
 		} `xml:"MessageID"`
 		RelatesTo struct {
+			Text  string `xml:",chardata"`
 			Xmlns string `xml:"xmlns,attr"`
-			S     string `xml:"S,attr"`
-			Env   string `xml:"env,attr"`
 		} `xml:"RelatesTo"`
 		To struct {
+			Text  string `xml:",chardata"`
 			Xmlns string `xml:"xmlns,attr"`
-			S     string `xml:"S,attr"`
-			Env   string `xml:"env,attr"`
 		} `xml:"To"`
 	} `xml:"Header"`
 	Body struct {
+		Text             string `xml:",chardata"`
 		PRPAIN201306UV02 struct {
+			Text       string `xml:",chardata"`
 			Xmlns      string `xml:"xmlns,attr"`
 			ITSVersion string `xml:"ITSVersion,attr"`
 			ID         struct {
+				Text      string `xml:",chardata"`
 				Extension string `xml:"extension,attr"`
 				Root      string `xml:"root,attr"`
 			} `xml:"id"`
 			CreationTime struct {
+				Text  string `xml:",chardata"`
 				Value string `xml:"value,attr"`
 			} `xml:"creationTime"`
 			VersionCode struct {
+				Text string `xml:",chardata"`
 				Code string `xml:"code,attr"`
 			} `xml:"versionCode"`
 			InteractionId struct {
+				Text      string `xml:",chardata"`
 				Extension string `xml:"extension,attr"`
 				Root      string `xml:"root,attr"`
 			} `xml:"interactionId"`
 			ProcessingCode struct {
+				Text string `xml:",chardata"`
 				Code string `xml:"code,attr"`
 			} `xml:"processingCode"`
 			ProcessingModeCode struct {
+				Text string `xml:",chardata"`
 				Code string `xml:"code,attr"`
 			} `xml:"processingModeCode"`
 			AcceptAckCode struct {
+				Text string `xml:",chardata"`
 				Code string `xml:"code,attr"`
 			} `xml:"acceptAckCode"`
 			Receiver struct {
+				Text     string `xml:",chardata"`
 				TypeCode string `xml:"typeCode,attr"`
 				Device   struct {
+					Text           string `xml:",chardata"`
 					ClassCode      string `xml:"classCode,attr"`
 					DeterminerCode string `xml:"determinerCode,attr"`
 					ID             struct {
+						Text                   string `xml:",chardata"`
 						AssigningAuthorityName string `xml:"assigningAuthorityName,attr"`
 						Root                   string `xml:"root,attr"`
 					} `xml:"id"`
 					AsAgent struct {
+						Text                    string `xml:",chardata"`
 						ClassCode               string `xml:"classCode,attr"`
 						RepresentedOrganization struct {
+							Text           string `xml:",chardata"`
 							ClassCode      string `xml:"classCode,attr"`
 							DeterminerCode string `xml:"determinerCode,attr"`
 							ID             struct {
+								Text                   string `xml:",chardata"`
 								AssigningAuthorityName string `xml:"assigningAuthorityName,attr"`
 								Root                   string `xml:"root,attr"`
 							} `xml:"id"`
@@ -398,19 +411,25 @@ type PDQv3Response struct {
 				} `xml:"device"`
 			} `xml:"receiver"`
 			Sender struct {
+				Text     string `xml:",chardata"`
 				TypeCode string `xml:"typeCode,attr"`
 				Device   struct {
+					Text           string `xml:",chardata"`
 					ClassCode      string `xml:"classCode,attr"`
 					DeterminerCode string `xml:"determinerCode,attr"`
 					ID             struct {
+						Text string `xml:",chardata"`
 						Root string `xml:"root,attr"`
 					} `xml:"id"`
 					AsAgent struct {
+						Text                    string `xml:",chardata"`
 						ClassCode               string `xml:"classCode,attr"`
 						RepresentedOrganization struct {
+							Text           string `xml:",chardata"`
 							ClassCode      string `xml:"classCode,attr"`
 							DeterminerCode string `xml:"determinerCode,attr"`
 							ID             struct {
+								Text string `xml:",chardata"`
 								Root string `xml:"root,attr"`
 							} `xml:"id"`
 						} `xml:"representedOrganization"`
@@ -418,107 +437,177 @@ type PDQv3Response struct {
 				} `xml:"device"`
 			} `xml:"sender"`
 			Acknowledgement struct {
+				Text     string `xml:",chardata"`
 				TypeCode struct {
+					Text string `xml:",chardata"`
 					Code string `xml:"code,attr"`
 				} `xml:"typeCode"`
 				TargetMessage struct {
-					ID struct {
+					Text string `xml:",chardata"`
+					ID   struct {
+						Text      string `xml:",chardata"`
 						Extension string `xml:"extension,attr"`
 						Root      string `xml:"root,attr"`
 					} `xml:"id"`
 				} `xml:"targetMessage"`
 			} `xml:"acknowledgement"`
 			ControlActProcess struct {
+				Text      string `xml:",chardata"`
 				ClassCode string `xml:"classCode,attr"`
 				MoodCode  string `xml:"moodCode,attr"`
 				Code      struct {
+					Text       string `xml:",chardata"`
 					Code       string `xml:"code,attr"`
 					CodeSystem string `xml:"codeSystem,attr"`
 				} `xml:"code"`
 				Subject struct {
+					Text                 string `xml:",chardata"`
 					ContextConductionInd string `xml:"contextConductionInd,attr"`
 					TypeCode             string `xml:"typeCode,attr"`
 					RegistrationEvent    struct {
+						Text      string `xml:",chardata"`
 						ClassCode string `xml:"classCode,attr"`
 						MoodCode  string `xml:"moodCode,attr"`
 						ID        struct {
+							Text       string `xml:",chardata"`
 							NullFlavor string `xml:"nullFlavor,attr"`
 						} `xml:"id"`
 						StatusCode struct {
+							Text string `xml:",chardata"`
 							Code string `xml:"code,attr"`
 						} `xml:"statusCode"`
 						Subject1 struct {
+							Text     string `xml:",chardata"`
 							TypeCode string `xml:"typeCode,attr"`
 							Patient  struct {
+								Text      string `xml:",chardata"`
 								ClassCode string `xml:"classCode,attr"`
 								ID        []struct {
+									Text                   string `xml:",chardata"`
 									AssigningAuthorityName string `xml:"assigningAuthorityName,attr"`
 									Extension              string `xml:"extension,attr"`
 									Root                   string `xml:"root,attr"`
 								} `xml:"id"`
 								StatusCode struct {
+									Text string `xml:",chardata"`
 									Code string `xml:"code,attr"`
 								} `xml:"statusCode"`
 								EffectiveTime struct {
+									Text  string `xml:",chardata"`
 									Value string `xml:"value,attr"`
 								} `xml:"effectiveTime"`
 								PatientPerson struct {
+									Text           string `xml:",chardata"`
 									ClassCode      string `xml:"classCode,attr"`
 									DeterminerCode string `xml:"determinerCode,attr"`
 									Name           struct {
+										Text   string `xml:",chardata"`
 										Use    string `xml:"use,attr"`
 										Given  string `xml:"given"`
 										Family string `xml:"family"`
 									} `xml:"name"`
+									Telecom []struct {
+										Text  string `xml:",chardata"`
+										Use   string `xml:"use,attr"`
+										Value string `xml:"value,attr"`
+									} `xml:"telecom"`
 									AdministrativeGenderCode struct {
+										Text           string `xml:",chardata"`
 										Code           string `xml:"code,attr"`
 										CodeSystem     string `xml:"codeSystem,attr"`
 										CodeSystemName string `xml:"codeSystemName,attr"`
 									} `xml:"administrativeGenderCode"`
 									BirthTime struct {
+										Text  string `xml:",chardata"`
 										Value string `xml:"value,attr"`
 									} `xml:"birthTime"`
 									DeceasedInd struct {
+										Text  string `xml:",chardata"`
 										Value string `xml:"value,attr"`
 									} `xml:"deceasedInd"`
 									MultipleBirthInd struct {
+										Text  string `xml:",chardata"`
 										Value string `xml:"value,attr"`
 									} `xml:"multipleBirthInd"`
 									Addr struct {
+										Text              string `xml:",chardata"`
 										StreetAddressLine string `xml:"streetAddressLine"`
 										City              string `xml:"city"`
 										State             string `xml:"state"`
 										PostalCode        string `xml:"postalCode"`
 										Country           string `xml:"country"`
 									} `xml:"addr"`
+									MaritalStatusCode struct {
+										Text           string `xml:",chardata"`
+										Code           string `xml:"code,attr"`
+										CodeSystem     string `xml:"codeSystem,attr"`
+										CodeSystemName string `xml:"codeSystemName,attr"`
+									} `xml:"maritalStatusCode"`
+									AsCitizen struct {
+										Text            string `xml:",chardata"`
+										ClassCode       string `xml:"classCode,attr"`
+										PoliticalNation struct {
+											Text           string `xml:",chardata"`
+											ClassCode      string `xml:"classCode,attr"`
+											DeterminerCode string `xml:"determinerCode,attr"`
+											Code           struct {
+												Text string `xml:",chardata"`
+												Code string `xml:"code,attr"`
+											} `xml:"code"`
+										} `xml:"politicalNation"`
+									} `xml:"asCitizen"`
+									AsMember struct {
+										Text      string `xml:",chardata"`
+										ClassCode string `xml:"classCode,attr"`
+										Group     struct {
+											Text           string `xml:",chardata"`
+											ClassCode      string `xml:"classCode,attr"`
+											DeterminerCode string `xml:"determinerCode,attr"`
+											Code           struct {
+												Text           string `xml:",chardata"`
+												Code           string `xml:"code,attr"`
+												CodeSystem     string `xml:"codeSystem,attr"`
+												CodeSystemName string `xml:"codeSystemName,attr"`
+											} `xml:"code"`
+										} `xml:"group"`
+									} `xml:"asMember"`
 									BirthPlace struct {
+										Text string `xml:",chardata"`
 										Addr struct {
+											Text string `xml:",chardata"`
 											City string `xml:"city"`
 										} `xml:"addr"`
 									} `xml:"birthPlace"`
 								} `xml:"patientPerson"`
 								ProviderOrganization struct {
+									Text           string `xml:",chardata"`
 									ClassCode      string `xml:"classCode,attr"`
 									DeterminerCode string `xml:"determinerCode,attr"`
 									ID             struct {
+										Text       string `xml:",chardata"`
 										NullFlavor string `xml:"nullFlavor,attr"`
 									} `xml:"id"`
 									ContactParty struct {
+										Text      string `xml:",chardata"`
 										ClassCode string `xml:"classCode,attr"`
 									} `xml:"contactParty"`
 								} `xml:"providerOrganization"`
 								SubjectOf1 struct {
+									Text                  string `xml:",chardata"`
 									TypeCode              string `xml:"typeCode,attr"`
 									QueryMatchObservation struct {
+										Text      string `xml:",chardata"`
 										ClassCode string `xml:"classCode,attr"`
 										MoodCode  string `xml:"moodCode,attr"`
 										Code      struct {
+											Text       string `xml:",chardata"`
 											Code       string `xml:"code,attr"`
 											CodeSystem string `xml:"codeSystem,attr"`
 										} `xml:"code"`
 										Value struct {
-											Value string `xml:"value,attr"`
+											Text  string `xml:",chardata"`
 											Xsi   string `xml:"xsi,attr"`
+											Value string `xml:"value,attr"`
 											Type  string `xml:"type,attr"`
 										} `xml:"value"`
 									} `xml:"queryMatchObservation"`
@@ -526,10 +615,13 @@ type PDQv3Response struct {
 							} `xml:"patient"`
 						} `xml:"subject1"`
 						Custodian struct {
+							Text           string `xml:",chardata"`
 							TypeCode       string `xml:"typeCode,attr"`
 							AssignedEntity struct {
+								Text      string `xml:",chardata"`
 								ClassCode string `xml:"classCode,attr"`
 								ID        struct {
+									Text       string `xml:",chardata"`
 									NullFlavor string `xml:"nullFlavor,attr"`
 								} `xml:"id"`
 							} `xml:"assignedEntity"`
@@ -537,44 +629,59 @@ type PDQv3Response struct {
 					} `xml:"registrationEvent"`
 				} `xml:"subject"`
 				QueryAck struct {
+					Text    string `xml:",chardata"`
 					QueryId struct {
+						Text      string `xml:",chardata"`
 						Extension string `xml:"extension,attr"`
 						Root      string `xml:"root,attr"`
 					} `xml:"queryId"`
 					StatusCode struct {
+						Text string `xml:",chardata"`
 						Code string `xml:"code,attr"`
 					} `xml:"statusCode"`
 					QueryResponseCode struct {
+						Text string `xml:",chardata"`
 						Code string `xml:"code,attr"`
 					} `xml:"queryResponseCode"`
 					ResultTotalQuantity struct {
+						Text  string `xml:",chardata"`
 						Value string `xml:"value,attr"`
 					} `xml:"resultTotalQuantity"`
 					ResultCurrentQuantity struct {
+						Text  string `xml:",chardata"`
 						Value string `xml:"value,attr"`
 					} `xml:"resultCurrentQuantity"`
 					ResultRemainingQuantity struct {
+						Text  string `xml:",chardata"`
 						Value string `xml:"value,attr"`
 					} `xml:"resultRemainingQuantity"`
 				} `xml:"queryAck"`
 				QueryByParameter struct {
+					Text    string `xml:",chardata"`
 					QueryId struct {
+						Text      string `xml:",chardata"`
 						Extension string `xml:"extension,attr"`
 						Root      string `xml:"root,attr"`
 					} `xml:"queryId"`
 					StatusCode struct {
+						Text string `xml:",chardata"`
 						Code string `xml:"code,attr"`
 					} `xml:"statusCode"`
 					ResponseModalityCode struct {
+						Text string `xml:",chardata"`
 						Code string `xml:"code,attr"`
 					} `xml:"responseModalityCode"`
 					ResponsePriorityCode struct {
+						Text string `xml:",chardata"`
 						Code string `xml:"code,attr"`
 					} `xml:"responsePriorityCode"`
 					MatchCriterionList string `xml:"matchCriterionList"`
 					ParameterList      struct {
+						Text            string `xml:",chardata"`
 						LivingSubjectId struct {
+							Text  string `xml:",chardata"`
 							Value struct {
+								Text      string `xml:",chardata"`
 								Extension string `xml:"extension,attr"`
 							} `xml:"value"`
 							SemanticsText string `xml:"semanticsText"`
@@ -585,6 +692,7 @@ type PDQv3Response struct {
 		} `xml:"PRPA_IN201306UV02"`
 	} `xml:"Body"`
 }
+
 type PIXv3Response struct {
 	XMLName xml.Name `xml:"Envelope"`
 	S       string   `xml:"S,attr"`
