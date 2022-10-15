@@ -39,7 +39,7 @@ type Templates struct {
 	Templates    []Template `json:"templates"`
 }
 type Template struct {
-	Id       string `json:"id"`
+	Id       int    `json:"id"`
 	Name     string `json:"name"`
 	IsXML    bool   `json:"isxml"`
 	Template string `json:"template"`
