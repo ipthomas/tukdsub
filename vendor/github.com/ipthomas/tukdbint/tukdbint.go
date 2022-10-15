@@ -32,6 +32,18 @@ type TukDBConnection struct {
 	DB_URL        string
 	DBReader_Only bool
 }
+type Templates struct {
+	Action       string     `json:"action"`
+	LastInsertId int64      `json:"lastinsertid"`
+	Count        int        `json:"count"`
+	Templates    []Template `json:"templates"`
+}
+type Template struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	IsXML    bool   `json:"isxml"`
+	Template string `json:"template"`
+}
 type Subscription struct {
 	Id         int    `json:"id"`
 	Created    string `json:"created"`
@@ -44,7 +56,7 @@ type Subscriptions struct {
 	Action        string         `json:"action"`
 	LastInsertId  int64          `json:"lastinsertid"`
 	Count         int            `json:"count"`
-	Subscriptions []Subscription `json:"Subscriptions"`
+	Subscriptions []Subscription `json:"subscriptions"`
 }
 type Event struct {
 	EventId            int64  `json:"eventid"`
@@ -389,6 +401,54 @@ func (i *XDWS) newEvent() error {
 	}
 	return err
 }
+func (i *Templates) newEvent() error {
+	if DB_URL != "" {
+		return i.newAWSEvent()
+	}
+	var err error
+	var stmntStr = tukcnst.SQL_DEFAULT_TEMPLATES
+	var rows *sql.Rows
+	var vals []interface{}
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancelCtx()
+	if len(i.Templates) > 0 {
+		if stmntStr, vals, err = createPreparedStmnt(i.Action, tukcnst.TEMPLATES, reflectStruct(reflect.ValueOf(i.Templates[0]))); err != nil {
+			log.Println(err.Error())
+			return err
+		}
+	}
+	sqlStmnt, err := DBConn.PrepareContext(ctx, stmntStr)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	defer sqlStmnt.Close()
+
+	if i.Action == tukcnst.SELECT {
+		rows, err = setRows(ctx, sqlStmnt, vals)
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+		for rows.Next() {
+			tmplt := Template{}
+			if err := rows.Scan(&tmplt.Id, &tmplt.Name, &tmplt.IsXML, &tmplt.Template); err != nil {
+				switch {
+				case err == sql.ErrNoRows:
+					return nil
+				default:
+					log.Println(err.Error())
+					return err
+				}
+			}
+			i.Templates = append(i.Templates, tmplt)
+			i.Count = i.Count + 1
+		}
+	} else {
+		i.LastInsertId, err = setLastID(ctx, sqlStmnt, vals)
+	}
+	return err
+}
 func (i *IdMaps) newEvent() error {
 	if DB_URL != "" {
 		return i.newAWSEvent()
@@ -632,6 +692,14 @@ func (i *IdMaps) newAWSEvent() error {
 func (i *EventAcks) newAWSEvent() error {
 	body, _ := json.Marshal(i)
 	awsreq := aws_APIRequest(i.Action, tukcnst.EVENT_ACKS, body)
+	if err := tukhttp.NewRequest(&awsreq); err != nil {
+		return err
+	}
+	return json.Unmarshal(awsreq.Response, &i)
+}
+func (i *Templates) newAWSEvent() error {
+	body, _ := json.Marshal(i)
+	awsreq := aws_APIRequest(i.Action, tukcnst.TEMPLATES, body)
 	if err := tukhttp.NewRequest(&awsreq); err != nil {
 		return err
 	}

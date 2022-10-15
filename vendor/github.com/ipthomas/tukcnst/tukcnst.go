@@ -190,6 +190,7 @@ const (
 	SQL_DEFAULT_IDMAPS              = "SELECT * FROM idmaps"
 	SQL_DEFAULT_XDWS                = "SELECT * FROM xdws"
 	SQL_DEFAULT_EVENTS              = "SELECT * FROM events"
+	SQL_DEFAULT_TEMPLATES           = "SELECT * FROM templates"
 	SQL_DEFAULT_WORKFLOWS           = "SELECT * FROM workflows"
 	SQL_DEFAULT_SUBSCRIPTIONS       = "SELECT * FROM subscriptions"
 	DSUB_TOPIC_TYPE_CODE            = "$XDSDocumentEntryTypeCode"

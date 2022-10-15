@@ -77,7 +77,6 @@ func SplitXDWKey(xdwkey string) (string, string) {
 		pwy = xdwkey[:len(xdwkey)-10]
 		nhs = strings.TrimPrefix(xdwkey, pwy)
 	}
-	log.Printf("Pathway = %s NHS ID = %s", pwy, nhs)
 	return pwy, nhs
 }
 
