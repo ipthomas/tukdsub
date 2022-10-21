@@ -436,6 +436,11 @@ func GetTimeFromString(timestr string) time.Time {
 func GetFutueDaysDate(startDate time.Time, days int) time.Time {
 	return startDate.AddDate(0, 0, days)
 }
+func GetFutureDate(startDate time.Time, years int, months int, days int, hours int, mins int) time.Time {
+	fdate := startDate.AddDate(years, months, days)
+	fdate = fdate.Add(time.Hour * time.Duration(hours))
+	return fdate.Add(time.Minute * time.Duration(mins))
+}
 
 // getErrorMessage returns the error message within
 // the SOAP response or returns a generic error message

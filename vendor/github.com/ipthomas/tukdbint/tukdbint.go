@@ -10,10 +10,9 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/ipthomas/tukcnst"
 	"github.com/ipthomas/tukhttp"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -59,7 +58,7 @@ type Subscriptions struct {
 	Subscriptions []Subscription `json:"subscriptions"`
 }
 type Event struct {
-	EventId            int64  `json:"eventid"`
+	Id                 int    `json:"id"`
 	Creationtime       string `json:"creationtime"`
 	DocName            string `json:"docname"`
 	ClassCode          string `json:"classcode"`
@@ -79,7 +78,7 @@ type Event struct {
 	Topic              string `json:"topic"`
 	Pathway            string `json:"pathway"`
 	Notes              string `json:"notes"`
-	Version            string `json:"ver"`
+	Version            int    `json:"ver"`
 	BrokerRef          string `json:"brokerref"`
 }
 type Events struct {
@@ -91,6 +90,8 @@ type Events struct {
 type Workflow struct {
 	Id        int    `json:"id"`
 	Created   string `json:"created"`
+	Pathway   string `json:"pathway"`
+	NHSId     string `json:"nhsid"`
 	XDW_Key   string `json:"xdw_key"`
 	XDW_UID   string `json:"xdw_uid"`
 	XDW_Doc   string `json:"xdw_doc"`
@@ -125,7 +126,7 @@ type IdMaps struct {
 	LidMap       []IdMap
 }
 type IdMap struct {
-	Id  int    `json:"id"`
+	Id  int64  `json:"id"`
 	Lid string `json:"lid"`
 	Mid string `json:"mid"`
 }
@@ -288,7 +289,7 @@ func (i *Events) newEvent() error {
 
 		for rows.Next() {
 			ev := Event{}
-			if err := rows.Scan(&ev.EventId, &ev.Creationtime, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Notes, &ev.Version); err != nil {
+			if err := rows.Scan(&ev.Id, &ev.Creationtime, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Notes, &ev.Version); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -554,13 +555,19 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 			if tid > 0 {
 				params[strings.ToLower(structType.Field(f).Name)] = tid
 			}
-		}
-		if structType.Field(f).Name != "Id" && i.Field(f).Interface() != "" {
-			log.Printf("Reflecting Field %s Value %v", structType.Field(f).Name, i.Field(f).Interface())
-			params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+		} else {
+			if structType.Field(f).Name == "Version" {
+				tver := i.Field(f).Interface().(int)
+				if tver != -1 {
+					params[strings.ToLower(structType.Field(f).Name)] = tver
+				}
+			} else {
+				if i.Field(f).Interface() != "" {
+					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+				}
+			}
 		}
 	}
-	log.Printf("Obtained %v Key Values - %s", len(params), params)
 	return params
 }
 func createPreparedStmnt(action string, table string, params map[string]interface{}) (string, []interface{}, error) {
