@@ -18,8 +18,9 @@ import (
 
 	"encoding/base64"
 
-	"github.com/google/uuid"
 	"github.com/ipthomas/tukcnst"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -48,8 +49,8 @@ func TemplateFuncMap() template.FuncMap {
 		"isafternow":     IsAfterNow,
 		"duration":       GetDuration,
 		"durationsince":  GetDurationSince,
-		"hasexpired":     OHT_HasExpired,
-		"completedate":   OHT_CompleteByDate,
+		"hasexpired":     OHT_ShouldEscalate,
+		"completedate":   OHT_FutureDate,
 	}
 }
 func ReturnEncoded(s string) string {
@@ -166,42 +167,32 @@ func Log(i interface{}) {
 	log.Println(string(b))
 }
 
-func OHT_HasExpired(startdate string, htDate string) bool {
-	log.Printf("Calculating if Expired")
-	if expireDate := OHT_CompleteByDate(startdate, htDate); expireDate == "NA" {
-		return false
-	} else {
-		if exdate, err := time.Parse("2006-01-02 15:04:05", expireDate); err != nil {
-			log.Println(err.Error())
-			return false
-		} else {
-			log.Printf("Has Expired = %v", time.Now().After(exdate))
-			return time.Now().After(exdate)
-		}
-	}
+func OHT_ShouldEscalate(startdate time.Time, htDate string) bool {
+	escalationdate := OHT_FutureDate(startdate, htDate)
+	log.Printf("Escalation required - %v", time.Now().After(escalationdate))
+	return time.Now().After(escalationdate)
 }
 
-// OHT_CompletionByDate takes a 'start date' input as a rfc3339 formatted string and the number of days in the future as a string containing an OASIS Human Task xdw function `day(x)“ where x is number of days in the future from the `start date`
-// It returns a string containing the future date. If there is an error it returns `NA`
-//
-//	For example - OHT_CompleteByDate("2022-09-06T23:06:54+01:00", "day(10)") returns `2022-09-16 23:06:54`
-func OHT_CompleteByDate(startdate string, htDate string) string {
-	var err error
-	var futuredays int
-	var st time.Time
-	var ft time.Time
+// OHT_FutureDate takes a 'start date' and a period in the future as a string containing an OASIS Human Task api function eg. day(x) returns x days in the future from the `start date`. Valid periods are min(x),hour(x),day(x),month(x) and year(x)
+func OHT_FutureDate(startdate time.Time, htDate string) time.Time {
 	if strings.Contains(htDate, "(") && strings.Contains(htDate, ")") {
-		if futuredays, err = strconv.Atoi(strings.Split(strings.Split(htDate, "(")[1], ")")[0]); err == nil {
-			log.Printf("Calculating date %v Days from %s", futuredays, startdate)
-			if st, err = time.Parse(time.RFC3339, startdate); err == nil {
-				ft = st.Add(time.Hour * 24 * time.Duration(futuredays))
-				log.Printf("Complete By %s", PrettyTime(ft.String()))
-				return PrettyTime(ft.String())
-			}
+		periodstr := strings.Split(htDate, "(")[0]
+		periodtime := GetIntFromString(strings.Split(strings.Split(htDate, "(")[1], ")")[0])
+		log.Printf("Calculating date %v %s from %s", periodtime, periodstr, startdate.String())
+		switch periodstr {
+		case "min":
+			return GetFutureDate(startdate, 0, 0, 0, 0, periodtime)
+		case "hour":
+			return GetFutureDate(startdate, 0, 0, 0, periodtime, 0)
+		case "day":
+			return GetFutureDate(startdate, 0, 0, periodtime, 0, 0)
+		case "month":
+			return GetFutureDate(startdate, 0, periodtime, 0, 0, 0)
+		case "year":
+			return GetFutureDate(startdate, periodtime, 0, 0, 0, 0)
 		}
 	}
-	log.Println(err.Error())
-	return "NA"
+	return startdate
 }
 
 // GetDurationSince takes a time as string input in RFC3339 format (yyyy-MM-ddThh:mm:ssZ) and returns the duration in days, hours and mins in a 'pretty format' eg '2 Days 0 Hrs 52 Mins' between the provided time and time.Now() as a string
@@ -234,20 +225,16 @@ func GetDurationSince(stime string) string {
 //	Example : GetDuration("2022-09-04T13:15:20Z", "2022-09-14T16:20:01Z") returns `10 Days 3 Hrs 4 Mins`
 func GetDuration(stime string, etime string) string {
 	log.Println("Obtaining time Duration between - " + stime + " and " + etime)
-	st, err := time.Parse(time.RFC3339, stime)
-	if err != nil {
-		log.Println(err.Error())
-		return "Not Available"
-	}
-	et, err := time.Parse(time.RFC3339, etime)
-	if err != nil {
-		log.Println(err.Error())
-		return "Not Available"
-	}
+	st := GetTimeFromString(stime)
+	et := GetTimeFromString(etime)
 	dur := et.Sub(st)
 	days := 0
 	hrs := int(dur.Hours())
 	min := int(dur.Minutes())
+	secs := int(dur.Seconds())
+	if secs < 60 {
+		return strconv.Itoa(secs) + " Secs"
+	}
 	if hrs > 24 {
 		days = hrs / 24
 		hrs = hrs % 24
@@ -286,7 +273,7 @@ func Time_Now() string {
 		log.Println(err.Error())
 		return time.Now().String()
 	}
-	return time.Now().In(location).String()
+	return time.Now().In(location).Format(time.RFC3339)
 }
 
 // PrettyTime fist splits the input based on sep =`.`, it takes index 0 of the split and replaces any T with a space then removes any trailing Z. It then splits the resulting string on sep = `+` returning index 0 of the split
@@ -426,11 +413,33 @@ func IsBrokerExpression(exp string) bool {
 }
 
 func GetTimeFromString(timestr string) time.Time {
-	time, err := time.Parse(time.RFC3339, timestr)
+	timestr = strings.Split(timestr, ".")[0]
+	timestr = strings.Split(timestr, " +")[0]
+	log.Printf("Parsing Time from string %s", timestr)
+	var err error
+	var rsptime time.Time
+	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		log.Println(err.Error())
+		return rsptime
 	}
-	return time
+	if !strings.Contains(timestr, "T") {
+		rsptime, err = time.ParseInLocation("2006-01-02 15:04:05", timestr, loc)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	} else {
+		rsptime, err = time.ParseInLocation(time.RFC3339, timestr, loc)
+		if err != nil {
+			log.Println(err.Error())
+			rsptime, err = time.ParseInLocation("2006-01-02T15:04:05Z", timestr, loc)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		}
+	}
+	log.Printf("Returning %s as time.Time", rsptime.String())
+	return rsptime
 }
 
 func GetFutueDaysDate(startDate time.Time, days int) time.Time {
@@ -487,9 +496,6 @@ func GetDocumentReturnList(message string) string {
 }
 
 func PrettyPrintDuration(duration time.Duration) string {
-	// rsp := strings.ReplaceAll(duration.String(), "h", "hours ")
-	// rsp = strings.ReplaceAll(rsp, "m", "mins ")
-	// rsp = rsp + "ecs"
 	rsp := ""
 	secs := int(duration.Seconds())
 	mins := secs / 60
@@ -497,28 +503,14 @@ func PrettyPrintDuration(duration time.Duration) string {
 	days := hrs / 24
 	hrs = hrs % 24
 	mins = mins % 60
-	secs = secs % 60
-	// hrs := int(duration.Hours())
-	// mins := int(duration.Minutes()) - (hrs * 60)
-	// secs := int(duration.Seconds()) - (hrs * 60 * 60) - (mins * 60)
-	// days := 0
-	if hrs > 0 {
-		// if hrs > 23 {
-		// 	days = hrs / 24
-		// 	hrs = hrs % 24
-		// }
-		if days == 0 {
-			rsp = GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
-		}
-		if days == 1 {
-			rsp = GetStringFromInt(days) + " Day " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
-		}
-		if days > 1 {
-			rsp = GetStringFromInt(days) + " Days " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins"
-		}
-	} else {
-		rsp = GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins " + GetStringFromInt(secs) + " Secs"
-
+	if secs < 60 {
+		return GetStringFromInt(secs) + " Secs"
+	}
+	if days == 1 {
+		rsp = GetStringFromInt(days) + " Day " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins "
+	}
+	if days == 0 || days > 1 {
+		rsp = GetStringFromInt(days) + " Days " + GetStringFromInt(hrs) + " Hours " + GetStringFromInt(mins) + " Mins "
 	}
 	return rsp
 }

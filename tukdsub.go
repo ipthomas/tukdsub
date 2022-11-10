@@ -28,7 +28,7 @@ type DSUBEvent struct {
 	EventMessage    string
 	Expressions     []string
 	Pathway         string
-	RowID           int
+	RowID           int64
 	DBConnection    tukdbint.TukDBConnection
 	Subs            tukdbint.Subscriptions
 	Request         []byte
@@ -239,7 +239,7 @@ func (i *DSUBEvent) processBrokerEventMessage() {
 						i.Event.Pathway = dbsub.Pathway
 						i.Event.Topic = dbsub.Topic
 						i.Event.NhsId = pdq.NHS_ID
-						tukevs := tukdbint.Events{Action: "insert"}
+						tukevs := tukdbint.Events{Action: tukcnst.INSERT}
 						tukevs.Events = append(tukevs.Events, i.Event)
 						if err = tukdbint.NewDBEvent(&tukevs); err == nil {
 							log.Printf("Created TUK DB Event for Pathway %s Expression %s Broker Ref %s", i.Event.Pathway, i.Event.Expression, i.Event.BrokerRef)

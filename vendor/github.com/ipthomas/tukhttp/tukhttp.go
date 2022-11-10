@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ipthomas/tukcnst"
-	util "github.com/ipthomas/tukutil"
+	"github.com/ipthomas/tukutil"
 )
 
 type CGLRequest struct {
@@ -82,32 +82,32 @@ func (i *ClientRequest) newRequest() error {
 	i.Act = req.FormValue(tukcnst.ACT)
 	i.User = req.FormValue("user")
 	i.Org = req.FormValue("org")
-	i.Orgoid = util.GetCodeSystemVal(req.FormValue("org"))
+	i.Orgoid = tukutil.GetCodeSystemVal(req.FormValue("org"))
 	i.Role = req.FormValue("role")
 	i.NHS = req.FormValue("nhs")
 	i.PID = req.FormValue("pid")
 	i.PIDOrg = req.FormValue("pidorg")
-	i.PIDOID = util.GetCodeSystemVal(req.FormValue("pidorg"))
+	i.PIDOID = tukutil.GetCodeSystemVal(req.FormValue("pidorg"))
 	i.FamilyName = req.FormValue("familyname")
 	i.GivenName = req.FormValue("givenname")
 	i.DOB = req.FormValue("dob")
 	i.Gender = req.FormValue("gender")
 	i.ZIP = req.FormValue("zip")
 	i.Status = req.FormValue("status")
-	i.ID = util.GetIntFromString(req.FormValue("id"))
+	i.ID = tukutil.GetIntFromString(req.FormValue("id"))
 	i.Task = req.FormValue(tukcnst.TASK)
 	i.Pathway = req.FormValue(tukcnst.PATHWAY)
-	i.Version = util.GetIntFromString(req.FormValue("version"))
+	i.Version = tukutil.GetIntFromString(req.FormValue("version"))
 	i.XDWKey = req.FormValue("xdwkey")
 	i.ReturnFormat = req.Header.Get(tukcnst.ACCEPT)
 	if len(i.XDWKey) > 12 {
-		i.Pathway, i.NHS = util.SplitXDWKey(i.XDWKey)
+		i.Pathway, i.NHS = tukutil.SplitXDWKey(i.XDWKey)
 	}
 	return nil
 }
 func (i *SOAPRequest) newRequest() error {
 	if i.Timeout == 0 {
-		i.Timeout = 5
+		i.Timeout = 15
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 	defer cancel()
@@ -137,7 +137,7 @@ func (i *PIXmRequest) newRequest() error {
 	var err error
 	var req *http.Request
 	if i.Timeout == 0 {
-		i.Timeout = 5
+		i.Timeout = 15
 	}
 	i.URL = i.URL + "?identifier=" + i.PID_OID + "%7C" + i.PID + tukcnst.FORMAT_JSON_PRETTY
 	if req, err = http.NewRequest(tukcnst.HTTP_GET, i.URL, nil); err == nil {
@@ -205,7 +205,7 @@ func (i *AWS_APIRequest) newRequest() error {
 }
 func (i *AWS_APIRequest) logRequest(headers http.Header) {
 	log.Println("HTTP POST Request Headers")
-	util.Log(headers)
+	tukutil.Log(headers)
 	log.Printf("HTTP Request\nURL = %s\nTimeout = %v\nMessage body\n%s", i.URL, i.Timeout, string(i.Body))
 }
 func (i *AWS_APIRequest) logResponse() {
@@ -213,7 +213,7 @@ func (i *AWS_APIRequest) logResponse() {
 }
 func (i *SOAPRequest) logRequest(headers http.Header) {
 	log.Println("SOAP Request Headers")
-	util.Log(headers)
+	tukutil.Log(headers)
 	log.Printf("SOAP Request\nURL = %s\nAction = %s\nTimeout = %v\n\n%s", i.URL, i.SOAPAction, i.Timeout, string(i.Body))
 }
 func (i *SOAPRequest) logResponse() {
@@ -221,12 +221,12 @@ func (i *SOAPRequest) logResponse() {
 }
 func (i *PIXmRequest) logRequest(headers http.Header) {
 	log.Println("HTTP GET Request Headers")
-	util.Log(headers)
+	tukutil.Log(headers)
 	log.Printf("HTTP Request\nURL = %s\nTimeout = %v", i.URL, i.Timeout)
 }
 func (i *CGLRequest) logRequest(headers http.Header) {
 	log.Println("HTTP GET Request Headers")
-	util.Log(headers)
+	tukutil.Log(headers)
 	log.Printf("HTTP Request\nURL = %s - Timeout = %v", i.Request, 5)
 }
 func (i *PIXmRequest) logResponse() {
