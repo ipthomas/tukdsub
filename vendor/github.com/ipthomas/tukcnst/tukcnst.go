@@ -6,6 +6,9 @@
 package tukcnst
 
 const (
+	DEFAULT_TUK_BASEPATH                    = "./config/"
+	DEFAULT_TUK_SERVICE_CONFIG_FILE         = "eventsrvc"
+	DEFAULT_TUK_SERVICE_LOG_FOLDER          = "logs"
 	QUERY_PARAM_INCLUDE                     = "_include"
 	QUERY_PARAM_MRN_ID                      = "mrnid"
 	QUERY_PARAM_MRN_OID                     = "mrnoid"
@@ -124,6 +127,7 @@ const (
 	SOAP_ACTION                             = "SOAPAction"
 	CONTENT_TYPE                            = "Content-Type"
 	TEXT_HTML                               = "text/html"
+	TEXT_PLAIN                              = "text/plain"
 	APPLICATION_XML                         = "application/xml"
 	SOAP_XML                                = "application/soap+xml"
 	ACCEPT                                  = "Accept"
@@ -279,6 +283,10 @@ const (
 	TUK_TEMPLATE_TIMELINE_WIDGET            = "timelinewidget"
 	TUK_TEMPLATE_ADMIN_SPA_WIDGET           = "adminspawidget"
 	TUK_TEMPLATE_SPA_WIDGET                 = "spawidget"
+	TUK_TEMPLATE_EVENTS_WIDGET              = "events"
+	TUK_TEMPLATE_CONFIG_WIDGET              = "wfconfig"
+	TUK_TEMPLATE_WORKFLOWS_WIDGET           = "workflows"
+	TUK_TEMPLATE_SUBSCRIPTIONS_WIDGET       = "subscriptions"
 	TUK_TASK_RESTART                        = "restart"
 	TUK_TASK_SPA                            = "spa"
 	TUK_TASK_GET                            = "get"
@@ -291,4 +299,9 @@ const (
 	TUK_TASK_SET_HTML                       = "sethtml"
 	TUK_TASK_GET_XML                        = "getxml"
 	TUK_TASK_SET_XML                        = "setxml"
+	TUK_STATUS_MET                          = "met"
+	TUK_STATUS_MISSED                       = "missed"
+	TUK_STATUS_ESCALATED                    = "escalated"
+	TUK_STATUS_OPEN                         = "OPEN"
+	TUK_STATUS_CLOSED                       = "CLOSED"
 )
