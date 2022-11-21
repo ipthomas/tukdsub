@@ -157,6 +157,7 @@ const (
 	URN_PRACTICE_CODE                       = "urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead"
 	URN_TYPE_CODE                           = "urn:uuid:f0306f51-975f-434e-a61c-c59651d33983"
 	URN_AUTHOR                              = "urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d"
+	URN_EVENT_LIST                          = "urn:uuid:2c6b8cb7-8b2a-4051-b291-b1ae6a575ef4"
 	AUTHOR_PERSON                           = "authorPerson"
 	AUTHOR_INSTITUTION                      = "authorInstitution"
 	AUTHOR_SPECIALITY                       = "authorSpecialty"

@@ -87,6 +87,7 @@ type Event struct {
 	User               string `json:"user"`
 	Org                string `json:"org"`
 	Role               string `json:"role"`
+	Speciality         string `json:"speciality"`
 	Topic              string `json:"topic"`
 	Pathway            string `json:"pathway"`
 	Comments           string `json:"comments"`
@@ -201,18 +202,14 @@ func (i *TukDBConnection) newEvent() error {
 		if i.DBHost == "" {
 			i.DBHost = "localhost"
 		}
-		if i.DBPort == "" {
-			i.DBPort = ":3306"
-		} else {
-			if !strings.HasPrefix(i.DBPort, ":") {
-				i.DBPort = ":" + i.DBPort
-			}
+		if !strings.HasPrefix(i.DBPort, ":") {
+			i.DBPort = ":" + i.DBPort
 		}
 		if i.DBName == "" {
 			i.DBName = "tuk"
 		}
 		if i.DBTimeout == "" {
-			i.DBTimeout = "60s"
+			i.DBTimeout = "5s"
 		} else {
 			if !strings.HasSuffix(i.DBTimeout, "s") {
 				i.DBTimeout = i.DBTimeout + "s"
@@ -333,7 +330,7 @@ func (i *Events) newEvent() error {
 
 		for rows.Next() {
 			ev := Event{}
-			if err := rows.Scan(&ev.Id, &ev.Creationtime, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Comments, &ev.Version, &ev.TaskId); err != nil {
+			if err := rows.Scan(&ev.Id, &ev.Creationtime, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Speciality, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Comments, &ev.Version, &ev.TaskId); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -364,14 +361,14 @@ func GetPathwayWorkflows(pathway string) Workflows {
 }
 func GetActiveWorkflowNames() []string {
 	var activewfs []string
-	wfs := GetWorkflows("", "", "", "", 0, false, "")
-	log.Printf("Active Workflow Count %v", wfs.Count)
+	wfs := GetWorkflows("", "", "", "", -1, false, tukcnst.TUK_STATUS_OPEN)
+	log.Printf("Open Workflow Count %v", wfs.Count)
 	for _, v := range wfs.Workflows {
 		if v.Id != 0 {
 			activewfs = append(activewfs, v.Pathway)
 		}
 	}
-	log.Printf("Set %v Active Pathways - %s", len(activewfs), activewfs)
+	log.Printf("Set %v Active Pathway Names - %s", len(activewfs), activewfs)
 	return activewfs
 }
 func GetWorkflows(pathway string, nhsid string, xdwkey string, xdwuid string, version int, published bool, status string) Workflows {
