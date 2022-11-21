@@ -204,15 +204,15 @@ func (i *DSUBEvent) processBrokerEventMessage() {
 			log.Println("no subscription ref found in notification message")
 			return
 		}
-		log.Printf("Found Subscription Reference %s. Setting Event state from Notify Message", i.Event.BrokerRef)
+		log.Printf("Found Subscription Reference %s Setting Event state from Notify Message", i.Event.BrokerRef)
 		i.initTUKEvent()
 		if i.Event.XdsPid == "" {
 			log.Println("no pid found in notification message")
 			return
 		}
 		log.Printf("Checking for TUK Event subscriptions with Broker Ref = %s", i.Event.BrokerRef)
-		tukdbSub := tukdbint.Subscription{BrokerRef: i.Event.BrokerRef}
 		tukdbSubs := tukdbint.Subscriptions{Action: tukcnst.SELECT}
+		tukdbSub := tukdbint.Subscription{BrokerRef: i.Event.BrokerRef}
 		tukdbSubs.Subscriptions = append(tukdbSubs.Subscriptions, tukdbSub)
 		if err = tukdbint.NewDBEvent(&tukdbSubs); err == nil {
 			log.Printf("TUK Event Subscriptions Count : %v", tukdbSubs.Count)
@@ -248,72 +248,80 @@ func (i *DSUBEvent) processBrokerEventMessage() {
 				}
 			} else {
 				log.Printf("No Subscriptions found with brokerref = %s. Sending Cancel request to Broker", i.Event.BrokerRef)
-				i.UUID = tukutil.NewUuid()
-				if err := i.cancelSubscriptions(); err != nil {
-					log.Println(err.Error())
-				}
+				i.cancelSubscriptions()
 			}
 		}
+	} else {
+		log.Println(err.Error())
 	}
+
 }
 
 // InitDSUBEvent initialise the DSUBEvent struc with values parsed from the DSUBNotifyMessage
 func (i *DSUBEvent) initTUKEvent() {
 	i.Event.Creationtime = tukutil.Time_Now()
 	i.Event.DocName = i.Notify.NotificationMessage.Message.SubmitObjectsRequest.RegistryObjectList.ExtrinsicObject.Name.LocalizedString.Value
-	i.Event.ClassCode = tukcnst.NO_VALUE
-	i.Event.ConfCode = tukcnst.NO_VALUE
-	i.Event.FormatCode = tukcnst.NO_VALUE
-	i.Event.FacilityCode = tukcnst.NO_VALUE
-	i.Event.PracticeCode = tukcnst.NO_VALUE
-	i.Event.Expression = tukcnst.NO_VALUE
-	i.Event.XdsPid = tukcnst.NO_VALUE
-	i.Event.XdsDocEntryUid = tukcnst.NO_VALUE
-	i.Event.RepositoryUniqueId = tukcnst.NO_VALUE
-	i.Event.NhsId = tukcnst.NO_VALUE
-	i.Event.User = tukcnst.NO_VALUE
-	i.Event.Org = tukcnst.NO_VALUE
-	i.Event.Role = tukcnst.NO_VALUE
-	i.Event.Topic = tukcnst.NO_VALUE
-	i.Event.Pathway = tukcnst.NO_VALUE
 	i.Event.BrokerRef = i.Notify.NotificationMessage.SubscriptionReference.Address.Text
 	i.setRepositoryUniqueId()
 	for _, c := range i.Notify.NotificationMessage.Message.SubmitObjectsRequest.RegistryObjectList.ExtrinsicObject.Classification {
-		log.Printf("Found Classification Scheme %s", c.ClassificationScheme)
 		val := c.Name.LocalizedString.Value
 		switch c.ClassificationScheme {
 		case tukcnst.URN_CLASS_CODE:
 			i.Event.ClassCode = val
+			log.Printf("Set Class Code %s", val)
 		case tukcnst.URN_CONF_CODE:
 			i.Event.ConfCode = val
+			log.Printf("Set Conf Code %s", val)
 		case tukcnst.URN_FORMAT_CODE:
 			i.Event.FormatCode = val
+			log.Printf("Set Format Code %s", val)
 		case tukcnst.URN_FACILITY_CODE:
 			i.Event.FacilityCode = val
+			log.Printf("Set Facility Code %s", val)
 		case tukcnst.URN_PRACTICE_CODE:
 			i.Event.PracticeCode = val
+			log.Printf("Set Practice Code %s", val)
 		case tukcnst.URN_TYPE_CODE:
 			i.Event.Expression = val
+			log.Printf("Set Type Code %s", val)
 		case tukcnst.URN_AUTHOR:
-			for _, s := range c.Slot {
-				switch s.Name {
+			for _, slot := range c.Slot {
+				switch slot.Name {
 				case tukcnst.AUTHOR_PERSON:
-					for _, ap := range s.ValueList.Value {
-						i.Event.User = i.Event.User + tukutil.PrettyAuthorPerson(ap) + ","
+					if i.Event.User == "" {
+						user := strings.ReplaceAll(slot.ValueList.Value[0], "^", " ")
+						user = strings.TrimSpace(user)
+						i.Event.User = i.Event.User + user + " "
+						log.Printf("Set User %s", i.Event.User)
 					}
-					i.Event.User = strings.TrimSuffix(i.Event.User, ",")
 				case tukcnst.AUTHOR_INSTITUTION:
-					for _, ai := range s.ValueList.Value {
-						i.Event.Org = i.Event.Org + tukutil.PrettyAuthorInstitution(ai) + ","
+					if i.Event.Org == "" {
+						i.Event.Org = strings.TrimSuffix(slot.ValueList.Value[0], "^^^")
+						log.Printf("Set Org %s", i.Event.Org)
 					}
-					i.Event.Org = strings.TrimSuffix(i.Event.Org, ",")
+				case tukcnst.AUTHOR_ROLE:
+					if i.Event.Role == "" {
+						i.Event.Role = strings.TrimSuffix(slot.ValueList.Value[0], "^^^")
+						log.Printf("Set Role %s", i.Event.Role)
+					}
+				case tukcnst.AUTHOR_SPECIALITY:
+					for _, value := range slot.ValueList.Value {
+						if !strings.HasPrefix(i.Event.Speciality, value+". ") {
+							i.Event.Speciality = i.Event.Speciality + strings.TrimSuffix(value, "^^^") + ". "
+						}
+					}
+					log.Printf("Set Speciality %s", i.Event.Speciality)
+					i.Event.Speciality = strings.TrimSpace(i.Event.Speciality)
 				}
 			}
+		case tukcnst.URN_EVENT_LIST:
+			i.Event.Comments = i.Event.Comments + val + ". "
 		default:
 			log.Printf("Unknown classication scheme %s. Skipping", c.ClassificationScheme)
 		}
 	}
-	i.Event.Role = i.Event.PracticeCode
+	i.Event.Comments = strings.TrimSpace(i.Event.Comments)
+	log.Printf("Added Event Codes to Notes %s", i.Event.Comments)
 	i.setExternalIdentifiers()
 	log.Println("Parsed DSUB Notify Message")
 }
@@ -324,22 +332,42 @@ func (i *DSUBEvent) newDSUBNotifyMessage() error {
 	if i.EventMessage == "" {
 		return errors.New("message is empty")
 	}
-	notifyElement := tukutil.GetXMLNodeList(i.EventMessage, tukcnst.DSUB_NOTIFY_ELEMENT)
-	if notifyElement == "" {
-		return errors.New("unable to locate notify element in received message")
-	}
-	if err := xml.Unmarshal([]byte(notifyElement), &dsubNotify); err != nil {
+	if err := xml.Unmarshal([]byte(i.EventMessage), &dsubNotify); err != nil {
 		return err
 	}
 	i.Event = tukdbint.Event{BrokerRef: dsubNotify.NotificationMessage.SubscriptionReference.Address.Text}
 	i.Notify = dsubNotify
 	return nil
 }
+func (i *DSUBEvent) newDSUBCancelMessage() {
+	tmplt, err := template.New(tukcnst.CANCEL).Funcs(tukutil.TemplateFuncMap()).Parse(tukcnst.GO_TEMPLATE_DSUB_CANCEL)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	var b bytes.Buffer
+	err = tmplt.Execute(&b, i.BrokerRef)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	soapReq := tukhttp.SOAPRequest{
+		URL:        i.BrokerURL,
+		SOAPAction: tukcnst.SOAP_ACTION_UNSUBSCRIBE_REQUEST,
+		Body:       b.Bytes(),
+		Timeout:    2,
+	}
+	log.Printf("Sending Cancel Request to DSUB Broker %s", i.BrokerURL)
+	err = tukhttp.NewRequest(&soapReq)
+	if err != nil {
+		log.Println(err.Error())
+	}
+}
 func (i *DSUBEvent) setRepositoryUniqueId() {
-	log.Println("Searching for Repository Unique ID")
 	for _, slot := range i.Notify.NotificationMessage.Message.SubmitObjectsRequest.RegistryObjectList.ExtrinsicObject.Slot {
 		if slot.Name == tukcnst.REPOSITORY_UID {
 			i.Event.RepositoryUniqueId = slot.ValueList.Value[0]
+			log.Printf("Set Repository UID %s", i.Event.RepositoryUniqueId)
 			return
 		}
 	}
@@ -351,8 +379,10 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 		switch ids {
 		case tukcnst.URN_XDS_PID:
 			i.Event.XdsPid = strings.Split(val, "^^^")[0]
+			log.Printf("Set XDS PID %s", i.Event.XdsPid)
 		case tukcnst.URN_XDS_DOCUID:
 			i.Event.XdsDocEntryUid = val
+			log.Printf("Set XDS Doc UID %s", i.Event.XdsDocEntryUid)
 		}
 	}
 }
@@ -360,7 +390,9 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 // (i *DSUBCancel) NewEvent() creates an IHE DSUB cancel message and sends it to the DSUB broker
 func (i *DSUBEvent) cancelSubscriptions() error {
 	if i.Pathway == "" && i.RowID == 0 {
-		return errors.New("pathway or rowid not set invalid request")
+		log.Println("pathway or rowid not set. Sending Cancel subscription message to Broker")
+		i.newDSUBCancelMessage()
+		return nil
 	}
 	i.Subs = tukdbint.Subscriptions{Action: tukcnst.DELETE}
 	delsub := tukdbint.Subscription{}
