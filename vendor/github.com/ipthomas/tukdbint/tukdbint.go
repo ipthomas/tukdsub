@@ -5,13 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/ipthomas/tukcnst"
+	"github.com/ipthomas/tukhttp"
 	"log"
 	"reflect"
 	"strings"
 	"time"
-
-	"github.com/ipthomas/tukcnst"
-	"github.com/ipthomas/tukhttp"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -359,13 +358,13 @@ func GetPathwayWorkflows(pathway string) Workflows {
 	wfs.newEvent()
 	return wfs
 }
-func GetActiveWorkflowNames() []string {
-	var activewfs []string
+func GetActiveWorkflowNames() map[string]string {
+	var activewfs = make(map[string]string)
 	wfs := GetWorkflows("", "", "", "", -1, false, tukcnst.TUK_STATUS_OPEN)
 	log.Printf("Open Workflow Count %v", wfs.Count)
 	for _, v := range wfs.Workflows {
 		if v.Id != 0 {
-			activewfs = append(activewfs, v.Pathway)
+			activewfs[v.Pathway] = ""
 		}
 	}
 	log.Printf("Set %v Active Pathway Names - %s", len(activewfs), activewfs)
@@ -426,20 +425,20 @@ func (i *Workflows) newEvent() error {
 	}
 	return err
 }
-func GetWorkflowDefinitionNames() []string {
-	var xdwdefs []string
+func GetWorkflowDefinitionNames() map[string]string {
+	names := make(map[string]string)
 	xdws := XDWS{Action: tukcnst.SELECT}
 	xdw := XDW{IsXDSMeta: false}
 	xdws.XDW = append(xdws.XDW, xdw)
 	if err := xdws.newEvent(); err == nil {
 		for _, xdw := range xdws.XDW {
 			if xdw.Id > 0 {
-				xdwdefs = append(xdwdefs, xdw.Name)
+				names[xdw.Name] = ""
 			}
 		}
 	}
-	log.Printf("Returning %v XDW Config files", len(xdwdefs))
-	return xdwdefs
+	log.Printf("Returning %v XDW Config files", len(names))
+	return names
 }
 func GetWorkflowXDSMetaNames() []string {
 	var xdwdefs []string
