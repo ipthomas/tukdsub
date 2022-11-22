@@ -379,12 +379,14 @@ func PrettyAuthorPerson(author string) string {
 	if strings.Contains(author, "^") {
 		authorsplit := strings.Split(author, "^")
 		if len(authorsplit) > 2 {
+			log.Println("Split Author " + authorsplit[1] + " " + authorsplit[2])
 			return authorsplit[1] + " " + authorsplit[2]
 		}
 		if len(authorsplit) > 1 {
 			return authorsplit[1]
 		}
 	}
+	log.Println("Parsed Author " + author)
 	return author
 }
 
