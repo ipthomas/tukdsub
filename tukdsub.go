@@ -196,7 +196,6 @@ func (i *DSUBEvent) newEvent() error {
 // creates a DSUBNotifyMessage from the EventMessage and populates a new TUKEvent with the DSUBNotifyMessage values
 // It then checks for TukDB Subscriptions matching the brokerref and creates a TUKEvent for each subscription
 // A DSUB ack response is always returned regardless of success
-// If no subscriptions are found a DSUB cancel message is sent to the DSUB Broker
 func (i *DSUBEvent) processBrokerEventMessage() {
 	i.Response = []byte(tukcnst.GO_TEMPLATE_DSUB_ACK)
 	if err := i.newDSUBNotifyMessage(); err == nil {
@@ -387,7 +386,6 @@ func (i *DSUBEvent) setExternalIdentifiers() {
 	}
 }
 
-// (i *DSUBCancel) NewEvent() creates an IHE DSUB cancel message and sends it to the DSUB broker
 func (i *DSUBEvent) cancelSubscriptions() error {
 	if i.Pathway == "" && i.RowID == 0 {
 		log.Println("pathway or rowid not set. Sending Cancel subscription message to Broker")
@@ -405,7 +403,7 @@ func (i *DSUBEvent) cancelSubscriptions() error {
 	return tukdbint.NewDBEvent(&i.Subs)
 }
 
-// (i *DSUBSubscribe) NewEvent() creates an IHE DSUB Subscribe message and sends it to the DSUB broker
+// (i *DSUBSubscribe) NewEvent() creates an IHE DSUB Subscribe request to an IHE DSUB broker. The Subscription reference is persisted in the subscriptions table.
 func (i *DSUBEvent) createSubscriptions() error {
 	type subreq struct {
 		BrokerURL   string
