@@ -3,6 +3,7 @@ package tukhttp
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"github.com/ipthomas/tukcnst"
 	"github.com/ipthomas/tukutil"
 )
+
+var DebugMode = true
 
 type CGLRequest struct {
 	Request    string
@@ -153,7 +156,7 @@ func (i *PIXmRequest) newRequest() error {
 		}
 		i.StatusCode = resp.StatusCode
 		if i.Response, err = io.ReadAll(resp.Body); err != nil {
-			log.Println(err.Error())
+			l(err.Error(), false)
 		}
 		defer resp.Body.Close()
 		i.logResponse()
@@ -192,7 +195,6 @@ func (i *AWS_APIRequest) newRequest() error {
 		defer cancel()
 		i.logRequest(req.Header)
 		if resp, err = client.Do(req.WithContext(ctx)); err == nil {
-			log.Printf("Response Status Code %v\n", resp.StatusCode)
 			if resp.StatusCode == http.StatusOK {
 				i.Response, err = io.ReadAll(resp.Body)
 			}
@@ -204,34 +206,43 @@ func (i *AWS_APIRequest) newRequest() error {
 	return err
 }
 func (i *AWS_APIRequest) logRequest(headers http.Header) {
-	log.Println("HTTP POST Request Headers")
+	l("HTTP POST Request Headers", true)
 	tukutil.Log(headers)
-	log.Printf("HTTP Request\nURL = %s\nTimeout = %v\nMessage body\n%s", i.URL, i.Timeout, string(i.Body))
+	l(fmt.Sprintf("HTTP Request\nURL = %s\nTimeout = %v\nMessage body\n%s", i.URL, i.Timeout, string(i.Body)), true)
 }
 func (i *AWS_APIRequest) logResponse() {
-	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
+	l(fmt.Sprintf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response)), true)
 }
 func (i *SOAPRequest) logRequest(headers http.Header) {
-	log.Println("SOAP Request Headers")
+	l("SOAP Request Headers", true)
 	tukutil.Log(headers)
-	log.Printf("SOAP Request\nURL = %s\nAction = %s\nTimeout = %v\n\n%s", i.URL, i.SOAPAction, i.Timeout, string(i.Body))
+	l(fmt.Sprintf("SOAP Request\nURL = %s\nAction = %s\nTimeout = %v\n\n%s", i.URL, i.SOAPAction, i.Timeout, string(i.Body)), true)
 }
 func (i *SOAPRequest) logResponse() {
-	log.Printf("SOAP Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
+	l(fmt.Sprintf("SOAP Response - Status Code = %v\n%s", i.StatusCode, string(i.Response)), true)
 }
 func (i *PIXmRequest) logRequest(headers http.Header) {
-	log.Println("HTTP GET Request Headers")
+	l("HTTP GET Request Headers", true)
 	tukutil.Log(headers)
-	log.Printf("HTTP Request\nURL = %s\nTimeout = %v", i.URL, i.Timeout)
+	l(fmt.Sprintf("HTTP Request\nURL = %s\nTimeout = %v", i.URL, i.Timeout), true)
 }
 func (i *CGLRequest) logRequest(headers http.Header) {
-	log.Println("HTTP GET Request Headers")
+	l("HTTP GET Request Headers", true)
 	tukutil.Log(headers)
-	log.Printf("HTTP Request\nURL = %s - Timeout = %v", i.Request, 5)
+	l(fmt.Sprintf("HTTP Request\nURL = %s - Timeout = %v", i.Request, 5), true)
 }
 func (i *PIXmRequest) logResponse() {
-	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
+	l(fmt.Sprintf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response)), true)
 }
 func (i *CGLRequest) logResponse() {
-	log.Printf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response))
+	l(fmt.Sprintf("HTML Response - Status Code = %v\n%s", i.StatusCode, string(i.Response)), true)
+}
+func l(msg string, debug bool) {
+	if !debug {
+		log.Println(msg)
+	} else {
+		if DebugMode {
+			log.Println(msg)
+		}
+	}
 }

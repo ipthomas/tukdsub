@@ -149,6 +149,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -957,6 +958,7 @@ type PDQInterface interface {
 
 var (
 	pat_cache = make(map[string][]byte)
+	DebugMode = false
 )
 
 func New_Transaction(i PDQInterface) error {
@@ -1005,7 +1007,7 @@ func (i *PDQQuery) setPDQ_ID() error {
 func (i *PDQQuery) setPatient() error {
 	if i.Cache && i.Server_Mode != tukcnst.PDQ_SERVER_TYPE_CGL {
 		if _, ok := pat_cache[i.Used_PID]; ok {
-			log.Printf("Cache entry found for Patient ID %s", i.Used_PID)
+			l(fmt.Sprintf("Cache entry found for Patient ID %s", i.Used_PID), true)
 			i.StatusCode = http.StatusOK
 			i.Response = pat_cache[i.Used_PID]
 			return nil
@@ -1185,4 +1187,13 @@ func (i *PDQQuery) newIHESOAPRequest(soapaction string) error {
 	i.Response = httpReq.Response
 	i.StatusCode = httpReq.StatusCode
 	return err
+}
+func l(msg string, debug bool) {
+	if !debug {
+		log.Println(msg)
+	} else {
+		if DebugMode {
+			log.Println(msg)
+		}
+	}
 }
