@@ -184,10 +184,10 @@ func (i *DSUBEvent) newEvent() error {
 		l(fmt.Sprintf("Processing Select Subscriptions for Pathway %s", i.Pathway), true)
 		err = i.selectSubscriptions()
 	case tukcnst.CREATE:
-		l(fmt.Sprintf("Processing Create Subscriptions"), true)
+		l("Processing Create Subscriptions", true)
 		err = i.createSubscriptions()
 	case tukcnst.CANCEL:
-		l(fmt.Sprintf("Processing Cancel Subscriptions"), true)
+		l("Processing Cancel Subscriptions", true)
 		err = i.cancelSubscriptions()
 	default:
 		l(fmt.Sprintf("Processing Broker Notify Message\n%s", i.EventMessage), true)
