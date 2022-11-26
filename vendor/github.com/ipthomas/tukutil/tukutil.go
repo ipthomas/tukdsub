@@ -28,6 +28,7 @@ var (
 	SeedRoot   = "1.2.40.0.13.1.1.3542466645."
 	IdSeed     = getIdIncrementSeed(5)
 	CodeSystem = make(map[string]string)
+	DebugMode  = true
 )
 
 func init() {
@@ -61,7 +62,7 @@ func ReturnDecoded(s string) string {
 
 	str, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		log.Println("Error Decoding Base64 String : " + err.Error())
+		l("Error Decoding Base64 String : "+err.Error(), false)
 		return ""
 	}
 	return string(str)
@@ -84,7 +85,7 @@ func SplitXDWKey(xdwkey string) (string, string) {
 // SetCodeSystem takes a map input and sets the codesystem map with the input
 func SetCodeSystem(cs map[string]string) {
 	CodeSystem = cs
-	log.Printf("Loaded %v code system key values", len(CodeSystem))
+	l(fmt.Sprintf("Loaded %v code system key values", len(CodeSystem)), true)
 	Log(CodeSystem)
 }
 
@@ -92,14 +93,14 @@ func SetCodeSystem(cs map[string]string) {
 func LoadCodeSystemFile(codesystemFile string) error {
 	file, err := os.Open(codesystemFile)
 	if err != nil {
-		log.Println(err.Error())
+		l(err.Error(), false)
 		return err
 	}
 	if err = json.NewDecoder(file).Decode(&CodeSystem); err != nil {
-		log.Println(err.Error())
+		l(err.Error(), false)
 		return err
 	}
-	log.Printf("Loaded %v code system key values", len(CodeSystem))
+	l(fmt.Sprintf("Loaded %v code system key values", len(CodeSystem)), true)
 	Log(CodeSystem)
 	return nil
 }
@@ -163,13 +164,15 @@ func MonitorApp() {
 
 // Log takes any struc as input and logs out the struc as a json string
 func Log(i interface{}) {
-	b, _ := json.MarshalIndent(i, "", "  ")
-	log.Println(string(b))
+	if DebugMode {
+		b, _ := json.MarshalIndent(i, "", "  ")
+		log.Println(string(b))
+	}
 }
 
 func OHT_ShouldEscalate(startdate time.Time, htDate string) bool {
 	escalationdate := OHT_FutureDate(startdate, htDate)
-	log.Printf("Escalation required - %v", time.Now().After(escalationdate))
+	l(fmt.Sprintf("Escalation required - %v", time.Now().After(escalationdate)), true)
 	return time.Now().After(escalationdate)
 }
 
@@ -178,7 +181,7 @@ func OHT_FutureDate(startdate time.Time, htDate string) time.Time {
 	if strings.Contains(htDate, "(") && strings.Contains(htDate, ")") {
 		periodstr := strings.Split(htDate, "(")[0]
 		periodtime := GetIntFromString(strings.Split(strings.Split(htDate, "(")[1], ")")[0])
-		log.Printf("Calculating date %v %s from %s", periodtime, periodstr, startdate.String())
+		l(fmt.Sprintf("Calculating date %v %s from %s", periodtime, periodstr, startdate.String()), true)
 		switch periodstr {
 		case "min":
 			return GetFutureDate(startdate, 0, 0, 0, 0, periodtime)
@@ -197,14 +200,14 @@ func OHT_FutureDate(startdate time.Time, htDate string) time.Time {
 
 // GetDurationSince takes a time as string input in RFC3339 format (yyyy-MM-ddThh:mm:ssZ) and returns the duration in days, hours and mins in a 'pretty format' eg '2 Days 0 Hrs 52 Mins' between the provided time and time.Now() as a string
 func GetDurationSince(stime string) string {
-	log.Println("Obtaining time Duration since - " + stime)
+	l("Obtaining time Duration since - "+stime, true)
 	st, err := time.Parse(time.RFC3339, stime)
 	if err != nil {
-		log.Println(err.Error())
+		l(err.Error(), false)
 		return "Not Available"
 	}
 	dur := time.Since(st)
-	log.Printf("Duration - %v", dur.String())
+	l(fmt.Sprintf("Duration - %v", dur.String()), true)
 	days := 0
 	hrs := int(dur.Hours())
 	min := int(dur.Minutes())
@@ -216,7 +219,7 @@ func GetDurationSince(stime string) string {
 	daysstr := strconv.Itoa(days)
 	hrsstr := strconv.Itoa(hrs)
 	minstr := strconv.Itoa(min - (days * 24 * 60) - (hrs * 60))
-	log.Println("Returning " + daysstr + " Days " + hrsstr + " Hrs " + minstr + " Mins")
+	l("Returning "+daysstr+" Days "+hrsstr+" Hrs "+minstr+" Mins", true)
 	return daysstr + " Days " + hrsstr + " Hrs " + minstr + " Mins"
 }
 
@@ -224,7 +227,7 @@ func GetDurationSince(stime string) string {
 //
 //	Example : GetDuration("2022-09-04T13:15:20Z", "2022-09-14T16:20:01Z") returns `10 Days 3 Hrs 4 Mins`
 func GetDuration(stime string, etime string) string {
-	log.Println("Obtaining time Duration between - " + stime + " and " + etime)
+	l("Obtaining time Duration between - "+stime+" and "+etime, true)
 	st := GetTimeFromString(stime)
 	et := GetTimeFromString(etime)
 	dur := et.Sub(st)
@@ -242,22 +245,22 @@ func GetDuration(stime string, etime string) string {
 	daysstr := strconv.Itoa(days)
 	hrsstr := strconv.Itoa(hrs)
 	minstr := strconv.Itoa(min - (days * 24 * 60) - (hrs * 60))
-	log.Println("Returning " + daysstr + " Days " + hrsstr + " Hrs " + minstr + " Mins")
+	l("Returning "+daysstr+" Days "+hrsstr+" Hrs "+minstr+" Mins", true)
 	return daysstr + " Days " + hrsstr + " Hrs " + minstr + " Mins"
 }
 
 // IsAfterNow takes a time as a string input in RFC3339 format (yyyy-MM-ddThh:mm:ssZ) and returns true if the input time is after time.Now() and false if input time is before time.Now()
 func IsAfterNow(inTime string) bool {
-	log.Printf("Checking if %s is after the current time", inTime)
+	l(fmt.Sprintf("Checking if %s is after the current time", inTime), true)
 	it, err := time.Parse(time.RFC3339, inTime)
 	if err != nil {
-		log.Println(err.Error())
+		l(err.Error(), false)
 		return false
 	}
 	now := time.Now().Local()
-	log.Println("Time Now - " + now.Local().String())
-	log.Println("Start Time - " + it.Local().String())
-	log.Printf("Time %s IsAfter(time.Now()) = %v", inTime, now.Before(it))
+	l("Time Now - "+now.Local().String(), true)
+	l("Start Time - "+it.Local().String(), true)
+	l(fmt.Sprintf("Time %s IsAfter(time.Now()) = %v", inTime, now.Before(it)), true)
 	return now.Before(it)
 }
 
@@ -270,7 +273,7 @@ func Pretty_Time_Now() string {
 func Time_Now() string {
 	location, err := time.LoadLocation("Europe/London")
 	if err != nil {
-		log.Println(err.Error())
+		l(err.Error(), false)
 		return time.Now().String()
 	}
 	return time.Now().In(location).Format(time.RFC3339)
@@ -355,14 +358,14 @@ func GetXMLNodeList(message string, node string) string {
 	if strings.Contains(message, node) {
 		var nodeopen = "<" + node
 		var nodeclose = "</" + node + ">"
-		log.Println("Searching for XML Element: " + nodeopen + ">")
+		l("Searching for XML Element: "+nodeopen+">", true)
 		var start = strings.Index(message, nodeopen)
 		var end = strings.Index(message, nodeclose) + len(nodeclose)
 		m := message[start:end]
-		log.Println("Extracted XML Element Nodelist")
+		l("Extracted XML Element Nodelist", true)
 		return m
 	}
-	log.Println("Message does not contain Element : " + node)
+	l("Message does not contain Element : "+node, false)
 	return ""
 }
 
@@ -379,14 +382,14 @@ func PrettyAuthorPerson(author string) string {
 	if strings.Contains(author, "^") {
 		authorsplit := strings.Split(author, "^")
 		if len(authorsplit) > 2 {
-			log.Println("Split Author " + authorsplit[1] + " " + authorsplit[2])
+			l("Split Author " + authorsplit[1] + " " + authorsplit[2],true)
 			return authorsplit[1] + " " + authorsplit[2]
 		}
 		if len(authorsplit) > 1 {
 			return authorsplit[1]
 		}
 	}
-	log.Println("Parsed Author " + author)
+	l("Parsed Author " + author,true)
 	return author
 }
 
@@ -397,13 +400,13 @@ func GetFolderFiles(folder string) ([]fs.DirEntry, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(folder)
 	if err != nil {
-		log.Println(err)
+		l(err.Error(),false)
 		return fileInfo, err
 	}
 	fileInfo, err = f.ReadDir(-1)
 	f.Close()
 	if err != nil {
-		log.Println(err)
+		l(err.Error(),false)
 	}
 	return fileInfo, err
 }
@@ -417,30 +420,30 @@ func IsBrokerExpression(exp string) bool {
 func GetTimeFromString(timestr string) time.Time {
 	timestr = strings.Split(timestr, ".")[0]
 	timestr = strings.Split(timestr, " +")[0]
-	log.Printf("Parsing Time from string %s", timestr)
+	l(fmt.Sprintf("Parsing Time from string %s", timestr),true)
 	var err error
 	var rsptime time.Time
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
-		log.Println(err.Error())
+		l(err.Error(),false)
 		return rsptime
 	}
 	if !strings.Contains(timestr, "T") {
 		rsptime, err = time.ParseInLocation("2006-01-02 15:04:05", timestr, loc)
 		if err != nil {
-			log.Println(err.Error())
+			l(err.Error().false)
 		}
 	} else {
 		rsptime, err = time.ParseInLocation(time.RFC3339, timestr, loc)
 		if err != nil {
-			log.Println(err.Error())
+			l(err.Error().false)
 			rsptime, err = time.ParseInLocation("2006-01-02T15:04:05Z", timestr, loc)
 			if err != nil {
-				log.Println(err.Error())
+				l(err.Error(),false)
 			}
 		}
 	}
-	log.Printf("Returning %s as time.Time", rsptime.String())
+	l(fmt.Sprintf("Returning %s as time.Time", rsptime.String()),true)
 	return rsptime
 }
 
@@ -639,7 +642,7 @@ func GetXdwConfigFiles(basepath string) (map[string][]byte, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(basepath + "xdwconfig/")
 	if err != nil {
-		log.Println(err)
+		l(err.Error(),false)
 		return xdwFiles, err
 	}
 	fileInfo, err = f.ReadDir(-1)
@@ -648,10 +651,10 @@ func GetXdwConfigFiles(basepath string) (map[string][]byte, error) {
 		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
 			xdwfile, err := os.ReadFile(basepath + "xdwconfig/" + file.Name())
 			if err != nil {
-				log.Println(err.Error())
+				l(err.Error(),false)
 				return xdwFiles, err
 			}
-			log.Println("Loaded WF Def for Pathway : " + file.Name())
+			l("Loaded WF Def for Pathway : " + file.Name(),true)
 			xdwFiles[file.Name()] = xdwfile
 		}
 	}
@@ -665,11 +668,11 @@ func GetHTMLWidgetFiles(basepath string) ([]string, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(basepath + "templates/html/")
 	if err != nil {
-		log.Println(err)
+		l(err.Error(),false)
 		return htmlWidgets, err
 	}
 	if fileInfo, err = f.ReadDir(-1); err != nil {
-		log.Println(err.Error())
+		l(err.Error(),false)
 		return htmlWidgets, err
 	}
 	defer f.Close()
@@ -677,17 +680,17 @@ func GetHTMLWidgetFiles(basepath string) ([]string, error) {
 		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
 			tmplt, err := os.ReadFile(basepath + "templates/html/" + file.Name())
 			if err != nil {
-				log.Println(err.Error())
+				l(err.Error(),false)
 				return htmlWidgets, err
 			}
-			log.Println("Loaded html template : " + file.Name())
+			l("Loaded html template : " + file.Name(),true)
 			htmlWidgets = append(htmlWidgets, string(tmplt))
 		}
 	}
 	return htmlWidgets, nil
 }
 func Minus(n1 int, n2 int) string {
-	log.Printf("Template called minus function(%v,%v) Returning %v", n1, n2, n1-n2)
+	l(fmt.Sprintf("Template called minus function(%v,%v) Returning %v", n1, n2, n1-n2),true)
 	return GetStringFromInt(n1 - n2)
 }
 
@@ -700,7 +703,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("myFile")
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to Upload File : "+err.Error()+" : </h3>")
-		log.Println(err)
+		l(err.Error(),false)
 		return
 	}
 	defer file.Close()
@@ -716,33 +719,32 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, "<h3>Uploading File</h3>")
 	fmt.Fprintf(w, "<h3 style='color:green'>Uploading File</h3>")
-	log.Printf("Uploading File: %+v", handler.Filename)
+	l(fmt.Sprintf("Uploading File: %+v", handler.Filename),true)
 	fmt.Fprintf(w, "<h3 style='color:green'>File Size: %+v", handler.Size)
-	log.Printf("File Size: %+v", handler.Size)
-	log.Printf("MIME Header: %+v", handler.Header)
+	l(fmt.Sprintf("File Size: %+v", handler.Size),true)
+	l(fmt.Sprintf("MIME Header: %+v", handler.Header),true)
 
 	fn := "uploads/" + pathway + nhsid + "_" + handler.Filename
 	uploadFile, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to create File on Server : "+err.Error()+" : </h3>")
-		log.Println(err)
+		l(err.Error(),false)
 		return
 	}
 	defer uploadFile.Close()
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to read file from client : "+err.Error()+" : </h3>")
-		log.Println(err)
+		l(err.Error(),false)
 		return
 	}
 	uploadFile.Write(fileBytes)
 	fmt.Fprintf(w, "<h3 style='color:green'>Successfully Uploaded File</h3>")
-	log.Printf("Successfully Uploaded File: %+v", handler.Filename)
-	log.Println("Saved file to " + fn)
+	l(fmt.Sprintf("Successfully Uploaded File: %+v", handler.Filename),true)
+	l("Saved file to " + fn),true
 }
 func WriteResponseHeaders(fn http.HandlerFunc, secure bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		w.Header().Set("Server", "Tiani_Spirit_UK")
 		if r.Header.Get(tukcnst.ACCEPT) == tukcnst.APPLICATION_XML {
 			w.Header().Set(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_XML)
@@ -793,14 +795,14 @@ func GetXMLNodeVal(message string, node string) string {
 	if strings.Contains(message, node) {
 		var nodeopen = "<" + node + ">"
 		var nodeclose = "</" + node + ">"
-		log.Println("Searching for value in : " + nodeopen + nodeclose)
+		l("Searching for value in : " + nodeopen + nodeclose,true)
 		var start = strings.Index(message, nodeopen) + len(nodeopen)
 		var end = strings.Index(message, nodeclose)
 		m := message[start:end]
-		log.Println("Returning value : " + m)
+		l("Returning value : " + m,true)
 		return m
 	}
-	log.Println("Message does not contain Node : " + node)
+	l("Message does not contain Node : " + node,false)
 	return ""
 }
 
@@ -824,15 +826,15 @@ func GetFileBytes(f string) ([]byte, error) {
 	return byteValue, nil
 }
 func GetXmlReturnNode(message string) string {
-	log.Println("Searching for <return> node in response message")
+	l("Searching for <return> node in response message",true)
 
 	if strings.Contains(message, "<return>") {
 		var start = strings.Index(message, "<return>")
 		var end = strings.Index(message, "</return>") + 9
-		log.Println("Found Node <return>")
+		l("Found Node <return>",true)
 		return message[start:end]
 	}
-	log.Println("Node <return> Not found. Returning message")
+	l("Node <return> Not found. Returning message",false)
 	return message
 }
 func NotEmpty(params []string) bool {
@@ -860,4 +862,13 @@ func SplitExpression(exp string) string {
 	}
 	str := strings.Split(exp, "^^")[0]
 	return str
+}
+func l(msg string, debug bool) {
+	if !debug {
+		log.Println(msg)
+	} else {
+		if DebugMode {
+			log.Println(msg)
+		}
+	}
 }

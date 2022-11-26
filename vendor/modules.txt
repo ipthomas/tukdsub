@@ -10,12 +10,12 @@ github.com/ipthomas/tukcnst
 # github.com/ipthomas/tukdbint v1.3.12
 ## explicit; go 1.19
 github.com/ipthomas/tukdbint
-# github.com/ipthomas/tukhttp v1.3.4
+# github.com/ipthomas/tukhttp v1.3.5
 ## explicit; go 1.19
 github.com/ipthomas/tukhttp
 # github.com/ipthomas/tukpdq v1.3.4
 ## explicit; go 1.19
 github.com/ipthomas/tukpdq
-# github.com/ipthomas/tukutil v1.3.3
+# github.com/ipthomas/tukutil v1.3.4
 ## explicit; go 1.19
 github.com/ipthomas/tukutil
