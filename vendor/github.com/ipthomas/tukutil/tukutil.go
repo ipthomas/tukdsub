@@ -382,14 +382,14 @@ func PrettyAuthorPerson(author string) string {
 	if strings.Contains(author, "^") {
 		authorsplit := strings.Split(author, "^")
 		if len(authorsplit) > 2 {
-			l("Split Author " + authorsplit[1] + " " + authorsplit[2],true)
+			l("Split Author "+authorsplit[1]+" "+authorsplit[2], true)
 			return authorsplit[1] + " " + authorsplit[2]
 		}
 		if len(authorsplit) > 1 {
 			return authorsplit[1]
 		}
 	}
-	l("Parsed Author " + author,true)
+	l("Parsed Author "+author, true)
 	return author
 }
 
@@ -400,13 +400,13 @@ func GetFolderFiles(folder string) ([]fs.DirEntry, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(folder)
 	if err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return fileInfo, err
 	}
 	fileInfo, err = f.ReadDir(-1)
 	f.Close()
 	if err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 	}
 	return fileInfo, err
 }
@@ -420,30 +420,30 @@ func IsBrokerExpression(exp string) bool {
 func GetTimeFromString(timestr string) time.Time {
 	timestr = strings.Split(timestr, ".")[0]
 	timestr = strings.Split(timestr, " +")[0]
-	l(fmt.Sprintf("Parsing Time from string %s", timestr),true)
+	l(fmt.Sprintf("Parsing Time from string %s", timestr), true)
 	var err error
 	var rsptime time.Time
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return rsptime
 	}
 	if !strings.Contains(timestr, "T") {
 		rsptime, err = time.ParseInLocation("2006-01-02 15:04:05", timestr, loc)
 		if err != nil {
-			l(err.Error().false)
+			l(err.Error(), false)
 		}
 	} else {
 		rsptime, err = time.ParseInLocation(time.RFC3339, timestr, loc)
 		if err != nil {
-			l(err.Error().false)
+			l(err.Error(), false)
 			rsptime, err = time.ParseInLocation("2006-01-02T15:04:05Z", timestr, loc)
 			if err != nil {
-				l(err.Error(),false)
+				l(err.Error(), false)
 			}
 		}
 	}
-	l(fmt.Sprintf("Returning %s as time.Time", rsptime.String()),true)
+	l(fmt.Sprintf("Returning %s as time.Time", rsptime.String()), true)
 	return rsptime
 }
 
@@ -642,7 +642,7 @@ func GetXdwConfigFiles(basepath string) (map[string][]byte, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(basepath + "xdwconfig/")
 	if err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return xdwFiles, err
 	}
 	fileInfo, err = f.ReadDir(-1)
@@ -651,10 +651,10 @@ func GetXdwConfigFiles(basepath string) (map[string][]byte, error) {
 		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
 			xdwfile, err := os.ReadFile(basepath + "xdwconfig/" + file.Name())
 			if err != nil {
-				l(err.Error(),false)
+				l(err.Error(), false)
 				return xdwFiles, err
 			}
-			l("Loaded WF Def for Pathway : " + file.Name(),true)
+			l("Loaded WF Def for Pathway : "+file.Name(), true)
 			xdwFiles[file.Name()] = xdwfile
 		}
 	}
@@ -668,11 +668,11 @@ func GetHTMLWidgetFiles(basepath string) ([]string, error) {
 	var fileInfo []fs.DirEntry
 	f, err = os.Open(basepath + "templates/html/")
 	if err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return htmlWidgets, err
 	}
 	if fileInfo, err = f.ReadDir(-1); err != nil {
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return htmlWidgets, err
 	}
 	defer f.Close()
@@ -680,17 +680,17 @@ func GetHTMLWidgetFiles(basepath string) ([]string, error) {
 		if strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), "_xdwdef") {
 			tmplt, err := os.ReadFile(basepath + "templates/html/" + file.Name())
 			if err != nil {
-				l(err.Error(),false)
+				l(err.Error(), false)
 				return htmlWidgets, err
 			}
-			l("Loaded html template : " + file.Name(),true)
+			l("Loaded html template : "+file.Name(), true)
 			htmlWidgets = append(htmlWidgets, string(tmplt))
 		}
 	}
 	return htmlWidgets, nil
 }
 func Minus(n1 int, n2 int) string {
-	l(fmt.Sprintf("Template called minus function(%v,%v) Returning %v", n1, n2, n1-n2),true)
+	l(fmt.Sprintf("Template called minus function(%v,%v) Returning %v", n1, n2, n1-n2), true)
 	return GetStringFromInt(n1 - n2)
 }
 
@@ -703,7 +703,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("myFile")
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to Upload File : "+err.Error()+" : </h3>")
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return
 	}
 	defer file.Close()
@@ -719,29 +719,29 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, "<h3>Uploading File</h3>")
 	fmt.Fprintf(w, "<h3 style='color:green'>Uploading File</h3>")
-	l(fmt.Sprintf("Uploading File: %+v", handler.Filename),true)
+	l(fmt.Sprintf("Uploading File: %+v", handler.Filename), true)
 	fmt.Fprintf(w, "<h3 style='color:green'>File Size: %+v", handler.Size)
-	l(fmt.Sprintf("File Size: %+v", handler.Size),true)
-	l(fmt.Sprintf("MIME Header: %+v", handler.Header),true)
+	l(fmt.Sprintf("File Size: %+v", handler.Size), true)
+	l(fmt.Sprintf("MIME Header: %+v", handler.Header), true)
 
 	fn := "uploads/" + pathway + nhsid + "_" + handler.Filename
 	uploadFile, err := os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to create File on Server : "+err.Error()+" : </h3>")
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return
 	}
 	defer uploadFile.Close()
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Fprintf(w, "<h3 style='color:red'>Failed to read file from client : "+err.Error()+" : </h3>")
-		l(err.Error(),false)
+		l(err.Error(), false)
 		return
 	}
 	uploadFile.Write(fileBytes)
 	fmt.Fprintf(w, "<h3 style='color:green'>Successfully Uploaded File</h3>")
-	l(fmt.Sprintf("Successfully Uploaded File: %+v", handler.Filename),true)
-	l("Saved file to " + fn),true
+	l(fmt.Sprintf("Successfully Uploaded File: %+v", handler.Filename), true)
+	l("Saved file to "+fn, true)
 }
 func WriteResponseHeaders(fn http.HandlerFunc, secure bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -795,14 +795,14 @@ func GetXMLNodeVal(message string, node string) string {
 	if strings.Contains(message, node) {
 		var nodeopen = "<" + node + ">"
 		var nodeclose = "</" + node + ">"
-		l("Searching for value in : " + nodeopen + nodeclose,true)
+		l("Searching for value in : "+nodeopen+nodeclose, true)
 		var start = strings.Index(message, nodeopen) + len(nodeopen)
 		var end = strings.Index(message, nodeclose)
 		m := message[start:end]
-		l("Returning value : " + m,true)
+		l("Returning value : "+m, true)
 		return m
 	}
-	l("Message does not contain Node : " + node,false)
+	l("Message does not contain Node : "+node, false)
 	return ""
 }
 
@@ -826,15 +826,15 @@ func GetFileBytes(f string) ([]byte, error) {
 	return byteValue, nil
 }
 func GetXmlReturnNode(message string) string {
-	l("Searching for <return> node in response message",true)
+	l("Searching for <return> node in response message", true)
 
 	if strings.Contains(message, "<return>") {
 		var start = strings.Index(message, "<return>")
 		var end = strings.Index(message, "</return>") + 9
-		l("Found Node <return>",true)
+		l("Found Node <return>", true)
 		return message[start:end]
 	}
-	l("Node <return> Not found. Returning message",false)
+	l("Node <return> Not found. Returning message", false)
 	return message
 }
 func NotEmpty(params []string) bool {
