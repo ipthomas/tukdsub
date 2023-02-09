@@ -974,7 +974,7 @@ func (i *PDQQuery) setPDQ_ID() error {
 		return errors.New("invalid request - pdq server url is not set")
 	}
 	if i.REG_OID == "" {
-		if os.Getenv(tukcnst.XDSDOMAIN) == "" {
+		if os.Getenv(tukcnst.ENV_REG_OID) == "" {
 			return errors.New("invalid request - reg oid is not set")
 		}
 	}
