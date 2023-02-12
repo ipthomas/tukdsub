@@ -36,6 +36,17 @@ type TukDBConnection struct {
 	DB_URL        string
 	DBReader_Only bool
 }
+type Statics struct {
+	Action       string   `json:"action"`
+	LastInsertId int64    `json:"lastinsertid"`
+	Count        int      `json:"count"`
+	Static       []Static `json:"static"`
+}
+type Static struct {
+	Id      int64  `json:"id"`
+	Name    string `json:"name"`
+	Content []byte `json:"content"`
+}
 type ServiceStates struct {
 	Action       string         `json:"action"`
 	LastInsertId int64          `json:"lastinsertid"`
@@ -815,6 +826,54 @@ func (i *ServiceStates) newEvent() error {
 	}
 	return err
 }
+func (i *Statics) newEvent() error {
+	if DB_URL != "" {
+		return i.newAWSEvent()
+	}
+	var err error
+	var stmntStr = tukcnst.SQL_DEFAULT_STATICS
+	var rows *sql.Rows
+	var vals []interface{}
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancelCtx()
+	if len(i.Static) > 0 {
+		if stmntStr, vals, err = createPreparedStmnt(i.Action, tukcnst.STATICS, reflectStruct(reflect.ValueOf(i.Static[0]))); err != nil {
+			log.Println(err.Error())
+			return err
+		}
+	}
+	sqlStmnt, err := DBConn.PrepareContext(ctx, stmntStr)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	defer sqlStmnt.Close()
+
+	if i.Action == tukcnst.SELECT {
+		rows, err = setRows(ctx, sqlStmnt, vals)
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+		for rows.Next() {
+			s := Static{}
+			if err := rows.Scan(&s.Id, &s.Name, &s.Content); err != nil {
+				switch {
+				case err == sql.ErrNoRows:
+					return nil
+				default:
+					log.Println(err.Error())
+					return err
+				}
+			}
+			i.Static = append(i.Static, s)
+			i.Count = i.Count + 1
+		}
+	} else {
+		i.LastInsertId, err = setLastID(ctx, sqlStmnt, vals)
+	}
+	return err
+}
 func GetTaskNotes(pwy string, nhsid string, taskid int, ver int) string {
 	notes := ""
 	evs := Events{Action: tukcnst.SELECT}
@@ -942,6 +1001,14 @@ func setLastID(ctx context.Context, sqlStmnt *sql.Stmt, vals []interface{}) (int
 }
 
 // functions for AWS Aurora DB Access via AWS API GW URL
+func (i *Statics) newAWSEvent() error {
+	body, _ := json.Marshal(i)
+	awsreq := aws_APIRequest(i.Action, tukcnst.STATICS, body)
+	if err := tukhttp.NewRequest(&awsreq); err != nil {
+		return err
+	}
+	return json.Unmarshal(awsreq.Response, &i)
+}
 func (i *ServiceStates) newAWSEvent() error {
 	body, _ := json.Marshal(i)
 	awsreq := aws_APIRequest(i.Action, tukcnst.SERVICE_STATES, body)

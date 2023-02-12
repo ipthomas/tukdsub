@@ -741,6 +741,19 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Successfully Uploaded File: %+v", handler.Filename)
 	log.Println("Saved file to " + fn)
 }
+func WriteFileToTempFolder(data []byte, filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write data to file: %v", err)
+	}
+	return nil
+}
 func WriteResponseHeaders(fn http.HandlerFunc, secure bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", "Tiani_Spirit_UK")
