@@ -424,13 +424,27 @@ func (i *DSUBEvent) createSubscriptions() error {
 				log.Println(err.Error())
 				return err
 			}
-			if expressionSubs.Count == 1 {
-				log.Printf("Found %v Subscription for Expression %s", expressionSubs.Count, expression)
-				i.Subs.Subscriptions = append(i.Subs.Subscriptions, expressionSubs.Subscriptions[1])
-				i.Subs.Count = i.Subs.Count + 1
-				if i.Subs.LastInsertId < int64(expressionSubs.Subscriptions[1].Id) {
-					i.Subs.LastInsertId = int64(expressionSubs.Subscriptions[1].Id)
+			if expressionSubs.Count > 0 {
+				log.Printf("Found %v Subscription(s) for Expression %s", expressionSubs.Count, expression)
+				log.Printf("Using DSUB Broker Reference %s for Pathway %s subscription to expression %s", expressionSubs.Subscriptions[0].BrokerRef, i.Pathway, expression)
+				newSub := tukdbint.Subscription{}
+				newSub.BrokerRef = expressionSubs.Subscriptions[0].BrokerRef
+				log.Printf("Set Broker Ref =  %s", newSub.BrokerRef)
+				newSub.Pathway = i.Pathway
+				newSub.Expression = expression
+				newSub.Topic = tukcnst.DSUB_TOPIC_TYPE_CODE
+				newsubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
+				newsubs.Subscriptions = append(newsubs.Subscriptions, newSub)
+				log.Println("Registering Subscription with Event Service")
+				if err := tukdbint.NewDBEvent(&newsubs); err != nil {
+					log.Println(err.Error())
+					return err
 				}
+				i.Subs.Subscriptions = append(i.Subs.Subscriptions, newSub)
+				if i.Subs.LastInsertId < int64(newSub.Id) {
+					i.Subs.LastInsertId = int64(newSub.Id)
+				}
+				i.Subs.Count = i.Subs.Count + 1
 			} else {
 				log.Printf("No Subscription for Expression %s found", expression)
 				brokerSub := subreq{
