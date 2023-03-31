@@ -426,25 +426,32 @@ func (i *DSUBEvent) createSubscriptions() error {
 			}
 			if expressionSubs.Count > 0 {
 				log.Printf("Found %v Subscription(s) for Expression %s", expressionSubs.Count, expression)
-				log.Printf("Using DSUB Broker Reference %s for Pathway %s subscription to expression %s", expressionSubs.Subscriptions[0].BrokerRef, i.Pathway, expression)
-				newSub := tukdbint.Subscription{}
-				newSub.BrokerRef = expressionSubs.Subscriptions[0].BrokerRef
-				log.Printf("Set Broker Ref =  %s", newSub.BrokerRef)
-				newSub.Pathway = i.Pathway
-				newSub.Expression = expression
-				newSub.Topic = tukcnst.DSUB_TOPIC_TYPE_CODE
-				newsubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
-				newsubs.Subscriptions = append(newsubs.Subscriptions, newSub)
-				log.Println("Registering Subscription with Event Service")
-				if err := tukdbint.NewDBEvent(&newsubs); err != nil {
-					log.Println(err.Error())
-					return err
+				foundBrokerRef := false
+				for _, s := range expressionSubs.Subscriptions {
+					if !foundBrokerRef && s.BrokerRef != "" {
+						log.Printf("Using DSUB Broker Reference %s for Pathway %s subscription to expression %s", expressionSubs.Subscriptions[1].BrokerRef, i.Pathway, expression)
+						newSub := tukdbint.Subscription{}
+						newSub.BrokerRef = s.BrokerRef
+						log.Printf("Set Broker Ref =  %s", newSub.BrokerRef)
+						newSub.Pathway = i.Pathway
+						newSub.Expression = expression
+						newSub.Topic = tukcnst.DSUB_TOPIC_TYPE_CODE
+						newsubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
+						newsubs.Subscriptions = append(newsubs.Subscriptions, newSub)
+						log.Println("Registering Subscription with Event Service")
+						if err := tukdbint.NewDBEvent(&newsubs); err != nil {
+							log.Println(err.Error())
+							return err
+						}
+						i.Subs.Subscriptions = append(i.Subs.Subscriptions, newSub)
+						if i.Subs.LastInsertId < int64(newSub.Id) {
+							i.Subs.LastInsertId = int64(newSub.Id)
+						}
+						i.Subs.Count = i.Subs.Count + 1
+						foundBrokerRef = true
+						log.Println("Registered Subscription with Event Service")
+					}
 				}
-				i.Subs.Subscriptions = append(i.Subs.Subscriptions, newSub)
-				if i.Subs.LastInsertId < int64(newSub.Id) {
-					i.Subs.LastInsertId = int64(newSub.Id)
-				}
-				i.Subs.Count = i.Subs.Count + 1
 			} else {
 				log.Printf("No Subscription for Expression %s found", expression)
 				brokerSub := subreq{
