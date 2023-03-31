@@ -418,21 +418,21 @@ func (i *DSUBEvent) createSubscriptions() error {
 		for _, expression := range i.Expressions {
 			log.Printf("Checking for existing Subscriptions for Expression %s", expression)
 			expressionSubs := tukdbint.Subscriptions{Action: tukcnst.SELECT}
-			expressionSub := tukdbint.Subscription{Pathway: i.Pathway, Topic: tukcnst.DSUB_TOPIC_TYPE_CODE, Expression: expression}
+			expressionSub := tukdbint.Subscription{Expression: expression}
 			expressionSubs.Subscriptions = append(expressionSubs.Subscriptions, expressionSub)
 			if err := tukdbint.NewDBEvent(&expressionSubs); err != nil {
 				log.Println(err.Error())
 				return err
 			}
 			if expressionSubs.Count == 1 {
-				log.Printf("Found %v Subscription for Pathway %s Topic %s Expression %s", expressionSubs.Count, i.Pathway, tukcnst.DSUB_TOPIC_TYPE_CODE, expression)
+				log.Printf("Found %v Subscription for Expression %s", expressionSubs.Count, expression)
 				i.Subs.Subscriptions = append(i.Subs.Subscriptions, expressionSubs.Subscriptions[1])
 				i.Subs.Count = i.Subs.Count + 1
 				if i.Subs.LastInsertId < int64(expressionSubs.Subscriptions[1].Id) {
 					i.Subs.LastInsertId = int64(expressionSubs.Subscriptions[1].Id)
 				}
 			} else {
-				log.Printf("No Subscription for Pathway %s Topic %s Expression %s found", i.Pathway, tukcnst.DSUB_TOPIC_TYPE_CODE, expression)
+				log.Printf("No Subscription for Expression %s found", expression)
 				brokerSub := subreq{
 					BrokerURL:   i.BrokerURL,
 					ConsumerURL: i.ConsumerURL,
