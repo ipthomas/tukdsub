@@ -45,7 +45,7 @@ type Statics struct {
 type Static struct {
 	Id      int64  `json:"id"`
 	Name    string `json:"name"`
-	Content []byte `json:"content"`
+	Content string `json:"content"`
 }
 type ServiceStates struct {
 	Action       string         `json:"action"`
@@ -906,7 +906,7 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 					params[strings.ToLower(structType.Field(f).Name)] = tint
 				}
 			} else {
-				if i.Field(f).Interface() != "" {
+				if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
 					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
 				}
 			}
