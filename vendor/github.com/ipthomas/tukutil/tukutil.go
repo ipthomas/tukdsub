@@ -420,7 +420,6 @@ func IsBrokerExpression(exp string) bool {
 func GetTimeFromString(timestr string) time.Time {
 	timestr = strings.Split(timestr, ".")[0]
 	timestr = strings.Split(timestr, " +")[0]
-	log.Printf("Parsing Time from string %s", timestr)
 	var err error
 	var rsptime time.Time
 	loc, err := time.LoadLocation("Europe/London")
@@ -443,7 +442,6 @@ func GetTimeFromString(timestr string) time.Time {
 			}
 		}
 	}
-	log.Printf("Returning %s as time.Time", rsptime.String())
 	return rsptime
 }
 
