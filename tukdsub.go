@@ -329,15 +329,13 @@ func (i *DSUBEvent) initTUKEvent() {
 
 // NewDSUBNotifyMessage creates an IHE DSUB Notify message struc from the notfy element in the i.Message
 func (i *DSUBEvent) newDSUBNotifyMessage() error {
-	dsubNotify := DSUBNotifyMessage{}
 	if i.EventMessage == "" {
 		return errors.New("message is empty")
 	}
-	if err := xml.Unmarshal([]byte(i.EventMessage), &dsubNotify); err != nil {
+	if err := xml.Unmarshal([]byte(i.EventMessage), &i.Notify); err != nil {
 		return err
 	}
-	i.Event = tukdbint.Event{BrokerRef: dsubNotify.NotificationMessage.SubscriptionReference.Address.Text}
-	i.Notify = dsubNotify
+	i.Event = tukdbint.Event{BrokerRef: i.Notify.NotificationMessage.SubscriptionReference.Address.Text}
 	return nil
 }
 func (i *DSUBEvent) newDSUBCancelMessage() {
