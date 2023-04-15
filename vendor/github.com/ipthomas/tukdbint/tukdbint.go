@@ -142,25 +142,24 @@ type WorkflowStates struct {
 	Workflowstate []Workflowstate `json:"workflowstate"`
 }
 type Workflowstate struct {
-	Id             int64  `json:"id"`
-	WorkflowId     int64  `json:"workflowid"`
-	Pathway        string `json:"pathway"`
-	NHS            string `json:"nhsid"`
-	Version        int    `json:"version"`
-	Published      bool   `json:"published"`
-	Created        string `json:"created"`
-	CreatedBy      string `json:"createdby"`
-	Status         string `json:"status"`
-	CompleteBy     string `json:"completeby"`
-	LastUpdate     string `json:"lastupdate"`
-	Owner          string `json:"owner"`
-	Overdue        bool   `json:"overdue"`
-	Escalated      bool   `json:"escalated"`
-	TargetMet      bool   `json:"targetmet"`
-	InProgress     bool   `json:"inprogress"`
-	Duration       int    `json:"duration"`
-	PrettyDuration string `json:"prettyduration"`
-	TimeRemaining  string `json:"timeremaining"`
+	Id            int64  `json:"id"`
+	WorkflowId    int64  `json:"workflowid"`
+	Pathway       string `json:"pathway"`
+	NHSId         string `json:"nhsid"`
+	Version       int    `json:"version"`
+	Published     bool   `json:"published"`
+	Created       string `json:"created"`
+	CreatedBy     string `json:"createdby"`
+	Status        string `json:"status"`
+	CompleteBy    string `json:"completeby"`
+	LastUpdate    string `json:"lastupdate"`
+	Owner         string `json:"owner"`
+	Overdue       string `json:"overdue"`
+	Escalated     string `json:"escalated"`
+	TargetMet     string `json:"targetmet"`
+	InProgress    string `json:"inprogress"`
+	Duration      string `json:"prettyduration"`
+	TimeRemaining string `json:"timeremaining"`
 }
 
 type XDWS struct {
@@ -546,7 +545,7 @@ func (i *WorkflowStates) newEvent() error {
 		}
 		for rows.Next() {
 			workflow := Workflowstate{}
-			if err := rows.Scan(&workflow.Id, &workflow.WorkflowId, &workflow.Pathway, &workflow.NHS, &workflow.Version, &workflow.Published, &workflow.Created, &workflow.Status, &workflow.CompleteBy, &workflow.LastUpdate, &workflow.Owner, &workflow.Overdue, &workflow.Escalated, &workflow.TargetMet, &workflow.InProgress, &workflow.Duration, &workflow.PrettyDuration, &workflow.TimeRemaining); err != nil {
+			if err := rows.Scan(&workflow.Id, &workflow.WorkflowId, &workflow.Pathway, &workflow.NHSId, &workflow.Version, &workflow.Published, &workflow.Created, &workflow.Status, &workflow.CompleteBy, &workflow.LastUpdate, &workflow.Owner, &workflow.Overdue, &workflow.Escalated, &workflow.TargetMet, &workflow.InProgress, &workflow.Duration, &workflow.TimeRemaining); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -973,7 +972,7 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 				params[strings.ToLower(structType.Field(f).Name)] = tint64
 			}
 		} else {
-			if structType.Field(f).Name == "Version" || structType.Field(f).Name == "TaskId" || structType.Field(f).Name == "Duration" {
+			if structType.Field(f).Name == "Version" || structType.Field(f).Name == "TaskId" {
 				tint := i.Field(f).Interface().(int)
 				if tint != -1 {
 					params[strings.ToLower(structType.Field(f).Name)] = tint
