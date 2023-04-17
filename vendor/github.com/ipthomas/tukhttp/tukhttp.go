@@ -38,13 +38,14 @@ type SOAPRequest struct {
 	Response   []byte
 }
 type AWS_APIRequest struct {
-	URL        string
-	Act        string
-	Resource   string
-	Timeout    int64
-	StatusCode int
-	Body       []byte
-	Response   []byte
+	URL         string
+	Act         string
+	Resource    string
+	ContentType string
+	Timeout     int64
+	StatusCode  int
+	Body        []byte
+	Response    []byte
 }
 type ClientRequest struct {
 	HttpRequest  *http.Request
@@ -189,7 +190,7 @@ func (i *AWS_APIRequest) newRequest() error {
 	var resp *http.Response
 	client := &http.Client{}
 	if req, err = http.NewRequest(http.MethodPost, i.URL+i.Resource, bytes.NewBuffer(i.Body)); err == nil {
-		req.Header.Add(tukcnst.CONTENT_TYPE, tukcnst.APPLICATION_JSON_CHARSET_UTF_8)
+		req.Header.Add(tukcnst.CONTENT_TYPE, i.ContentType)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 		defer cancel()
 		i.logRequest(req.Header)
