@@ -158,7 +158,7 @@ type Workflowstate struct {
 	Escalated     string `json:"escalated"`
 	TargetMet     string `json:"targetmet"`
 	InProgress    string `json:"inprogress"`
-	Duration      string `json:"prettyduration"`
+	Duration      string `json:"duration"`
 	TimeRemaining string `json:"timeremaining"`
 }
 
