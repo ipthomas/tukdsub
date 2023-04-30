@@ -966,13 +966,13 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 	params := make(map[string]interface{})
 	structType := i.Type()
 	for f := 0; f < i.NumField(); f++ {
-		if structType.Field(f).Name == "Id" || structType.Field(f).Name == "EventID" || structType.Field(f).Name == "LastInsertId" || structType.Field(f).Name == "WorkflowId" {
+		if strings.EqualFold(structType.Field(f).Name, "Id") || strings.EqualFold(structType.Field(f).Name, "EventID") || strings.EqualFold(structType.Field(f).Name, "LastInsertId") || strings.EqualFold(structType.Field(f).Name, "WorkflowId") {
 			tint64 := i.Field(f).Interface().(int64)
 			if tint64 > 0 {
 				params[strings.ToLower(structType.Field(f).Name)] = tint64
 			}
 		} else {
-			if structType.Field(f).Name == "Version" || structType.Field(f).Name == "TaskId" {
+			if strings.EqualFold(structType.Field(f).Name, "Version") || strings.EqualFold(structType.Field(f).Name, "TaskId") {
 				tint := i.Field(f).Interface().(int)
 				if tint != -1 {
 					params[strings.ToLower(structType.Field(f).Name)] = tint
