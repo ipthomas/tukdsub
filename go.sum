@@ -1,5 +1,7 @@
 github.com/go-sql-driver/mysql v1.7.0 h1:ueSltNNllEqE3qcWBTD0iQd3IpL/6U+mJxLkazJ7YPc=
 github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
+github.com/go-sql-driver/mysql v1.7.1 h1:lUIinVbN1DY0xBg0eMOzmmtGoHwWBbvnWubQUrtU8EI=
+github.com/go-sql-driver/mysql v1.7.1/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/ipthomas/tukcnst v1.3.3 h1:DCjCAAlCvAX0sWHv/SBPDuuvIV9YS7wnJrBkH4pt3zs=
@@ -48,6 +50,8 @@ github.com/ipthomas/tukhttp v1.3.10 h1:BqDL2htGAm2H6nOs0JXCcZ9p4HUIYVWCGq3fn5Pz8
 github.com/ipthomas/tukhttp v1.3.10/go.mod h1:PIStBCGEHy5VvicxQq4RMkVPDhOnez1AUnEha/X+zW0=
 github.com/ipthomas/tukhttp v1.3.11 h1:AlKAeTnr4H1oXbx9G4xj76tJofoBQIYggXOPC8c9fds=
 github.com/ipthomas/tukhttp v1.3.11/go.mod h1:PIStBCGEHy5VvicxQq4RMkVPDhOnez1AUnEha/X+zW0=
+github.com/ipthomas/tukhttp v1.3.12 h1:fSVFQ1X3aEYxsg7xcSCrWpAg7d+4bBuJxVlLCR9Bv4Y=
+github.com/ipthomas/tukhttp v1.3.12/go.mod h1:PIStBCGEHy5VvicxQq4RMkVPDhOnez1AUnEha/X+zW0=
 github.com/ipthomas/tukpdq v1.3.7 h1:Hk8h7r/AfWLSJyk26dFW1s4wUOE/pMfFMOkbxTTJ0Hk=
 github.com/ipthomas/tukpdq v1.3.7/go.mod h1:nQIgNX+SNMIdv9IaIdUM6Q6Fm7mRDtBoT1lEmnOPPxg=
 github.com/ipthomas/tukpdq v1.3.8 h1:w3sTKd65fKINIEfLacIzjx3nnef4ioSwfWUqES4vkb0=

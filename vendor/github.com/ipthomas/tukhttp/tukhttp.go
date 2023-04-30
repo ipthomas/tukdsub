@@ -39,6 +39,7 @@ type SOAPRequest struct {
 }
 type AWS_APIRequest struct {
 	URL         string
+	Version     int
 	Act         string
 	Resource    string
 	ContentType string
