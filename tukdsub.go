@@ -240,6 +240,7 @@ func (i *DSUBEvent) processBrokerEventMessage() {
 						i.Event.Pathway = dbsub.Pathway
 						i.Event.Topic = dbsub.Topic
 						i.Event.NhsId = pdq.NHS_ID
+						i.Event.EventType = tukcnst.XDW_TASKEVENTTYPE_ATTACHMENT
 						tukevs := tukdbint.Events{Action: tukcnst.INSERT}
 						tukevs.Events = append(tukevs.Events, i.Event)
 						if err = tukdbint.NewDBEvent(&tukevs); err == nil {
