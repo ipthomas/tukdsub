@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/ipthomas/tukcnst v1.3.6
-	github.com/ipthomas/tukdbint v1.3.32
+	github.com/ipthomas/tukdbint v1.3.33
 	github.com/ipthomas/tukhttp v1.3.13
-	github.com/ipthomas/tukpdq v1.3.12
+	github.com/ipthomas/tukpdq v1.3.13
 	github.com/ipthomas/tukutil v1.3.10
 )
 

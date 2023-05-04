@@ -87,6 +87,7 @@ type Subscriptions struct {
 type Event struct {
 	Id                 int64  `json:"id"`
 	Creationtime       string `json:"creationtime"`
+	EventType          string `json:"eventtype"`
 	DocName            string `json:"docname"`
 	ClassCode          string `json:"classcode"`
 	ConfCode           string `json:"confcode"`
@@ -421,7 +422,7 @@ func (i *Events) newEvent() error {
 
 		for rows.Next() {
 			ev := Event{}
-			if err := rows.Scan(&ev.Id, &ev.Creationtime, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Speciality, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Comments, &ev.Version, &ev.TaskId); err != nil {
+			if err := rows.Scan(&ev.Id, &ev.Creationtime, &ev.EventType, &ev.DocName, &ev.ClassCode, &ev.ConfCode, &ev.FormatCode, &ev.FacilityCode, &ev.PracticeCode, &ev.Speciality, &ev.Expression, &ev.Authors, &ev.XdsPid, &ev.XdsDocEntryUid, &ev.RepositoryUniqueId, &ev.NhsId, &ev.User, &ev.Org, &ev.Role, &ev.Topic, &ev.Pathway, &ev.Comments, &ev.Version, &ev.TaskId); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil

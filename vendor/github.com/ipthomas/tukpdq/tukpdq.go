@@ -194,6 +194,75 @@ type PDQQuery struct {
 	Patients        *[]TUKPatient    `json:",omitempty"`
 	CGLUserResponse *CGLUserResponse `json:",omitempty"`
 }
+type Delphi struct {
+	Data struct {
+		LocalIdentifier int    `json:"LocalIdentifier,omitempty"`
+		Status          string `json:"Status,omitempty"`
+		Title           string `json:"Title,omitempty"`
+		Forename        string `json:"Forename,omitempty"`
+		Surname         string `json:"Surname,omitempty"`
+		GenderAtBirth   string `json:"GenderAtBirth,omitempty"`
+		DateOfBirth     string `json:"DateOfBirth,omitempty"`
+		Address         struct {
+			LocalIdentifier int    `json:"LocalIdentifier,omitempty"`
+			AddressLine1    string `json:"AddressLine1,omitempty"`
+			AddressLine2    string `json:"AddressLine2,omitempty"`
+			AddressLine3    string `json:"AddressLine3,omitempty"`
+			AddressLine4    string `json:"AddressLine4,omitempty"`
+			PostCode1       string `json:"PostCode1,omitempty"`
+			PostCode2       string `json:"PostCode2,omitempty"`
+		} `json:"Address,omitempty"`
+		Keyworker               string `json:"Keyworker,omitempty"`
+		LastAttendedAppointment string `json:"LastAttendedAppointment,omitempty"`
+		DrugScreening           []any  `json:"DrugScreening,omitempty"`
+		Prescriptions           []any  `json:"Prescriptions,omitempty"`
+		Risks                   []any  `json:"Risks,omitempty"`
+		Careplans               []struct {
+			LocalIdentifier          int    `json:"LocalIdentifier,omitempty"`
+			AlcohoUse                bool   `json:"AlcohoUse,omitempty"`
+			DrugUse                  bool   `json:"DrugUse,omitempty"`
+			EffectsOfAlcoholAndDrugs bool   `json:"EffectsOfAlcoholAndDrugs,omitempty"`
+			PreventingRelapse        bool   `json:"PreventingRelapse,omitempty"`
+			PreventingOverdose       bool   `json:"PreventingOverdose,omitempty"`
+			PersonalCare             bool   `json:"PersonalCare,omitempty"`
+			FindingThingsIEnjoy      bool   `json:"FindingThingsIEnjoy,omitempty"`
+			ManagingMoney            bool   `json:"ManagingMoney,omitempty"`
+			SupportForMyChildren     bool   `json:"SupportForMyChildren,omitempty"`
+			EducationOrTraining      bool   `json:"EducationOrTraining,omitempty"`
+			Other                    bool   `json:"Other,omitempty"`
+			AlcoholDrugUse           bool   `json:"AlcoholDrugUse,omitempty"`
+			ManagingCravings         bool   `json:"ManagingCravings,omitempty"`
+			MentalEmotionalHealth    bool   `json:"MentalEmotionalHealth,omitempty"`
+			AccommodationHousing     bool   `json:"AccommodationHousing,omitempty"`
+			LegalProblems            bool   `json:"LegalProblems,omitempty"`
+			ParentingHelpSupport     bool   `json:"ParentingHelpSupport,omitempty"`
+			PhyscialHealth           bool   `json:"PhyscialHealth,omitempty"`
+			ImmediateProblem         string `json:"ImmediateProblem,omitempty"`
+			LongTermGoal             string `json:"LongTermGoal,omitempty"`
+			StepsToAchievingGoal     string `json:"StepsToAchievingGoal,omitempty"`
+			HowDidItGo               string `json:"HowDidItGo,omitempty"`
+			NextStepForGoal          string `json:"NextStepForGoal,omitempty"`
+			CommunityDetox           bool   `json:"CommunityDetox,omitempty"`
+			InpatientDetox           bool   `json:"InpatientDetox,omitempty"`
+			OverdoseInformation      bool   `json:"OverdoseInformation,omitempty"`
+			NutritionalAdvice        bool   `json:"NutritionalAdvice,omitempty"`
+			HepCScreening            bool   `json:"HepCScreening,omitempty"`
+			HepAAndBVaccination      bool   `json:"HepAAndBVaccination,omitempty"`
+			GroupWork                bool   `json:"GroupWork,omitempty"`
+			OneToOneSupport          bool   `json:"OneToOneSupport,omitempty"`
+			SupportWorker            bool   `json:"SupportWorker,omitempty"`
+			PrescribedMedication     bool   `json:"PrescribedMedication,omitempty"`
+			Stabilisation            bool   `json:"Stabilisation,omitempty"`
+			MedicalReview            bool   `json:"MedicalReview,omitempty"`
+			OtherClinical            bool   `json:"OtherClinical,omitempty"`
+			CarePlanGivenToClient    string `json:"CarePlanGivenToClient,omitempty"`
+			CareplanStartDate        string `json:"CareplanStartDate,omitempty"`
+			CarePlanReviewDate       string `json:"CarePlanReviewDate,omitempty"`
+		} `json:"Careplans,omitempty"`
+		Discharge any `json:"Discharge,omitempty"`
+	} `json:"Data,omitempty"`
+}
+
 type CGLUserResponse struct {
 	Data struct {
 		Client struct {
