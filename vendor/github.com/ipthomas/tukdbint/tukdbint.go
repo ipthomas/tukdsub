@@ -292,7 +292,7 @@ func (i *TukDBConnection) newEvent() error {
 			i.DBName,
 			i.DBTimeout,
 			i.DBReadTimeout)
-		log.Printf("No Database API URL provided. Opening DB Connection to mysql instance via DSN - %s", dsn)
+		log.Println("No Database API URL provided. Opening DB Connection to mysql instance via DSN")
 		DBConn, err = sql.Open(tukcnst.MYSQL, dsn)
 	}
 
