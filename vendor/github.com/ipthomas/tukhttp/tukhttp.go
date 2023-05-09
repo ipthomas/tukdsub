@@ -16,10 +16,11 @@ import (
 var DebugMode = true
 
 type CGLRequest struct {
-	Request    string
-	X_Api_Key  string
-	StatusCode int
-	Response   []byte
+	Request      string
+	X_Api_Key    string
+	X_Api_Secret string
+	StatusCode   int
+	Response     []byte
 }
 type PIXmRequest struct {
 	URL        string
@@ -169,6 +170,7 @@ func (i *CGLRequest) newRequest() error {
 	req, _ := http.NewRequest(tukcnst.HTTP_GET, i.Request, nil)
 	req.Header.Set(tukcnst.ACCEPT, tukcnst.APPLICATION_JSON)
 	req.Header.Set("X-API-KEY", i.X_Api_Key)
+	req.Header.Set("X-API-SECRET", i.X_Api_Secret)
 	i.logRequest(req.Header)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(5)*time.Second)
 	defer cancel()
