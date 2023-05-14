@@ -20,9 +20,8 @@ import (
 )
 
 var (
-	DB_URL    = ""
-	DBConn    *sql.DB
-	DebugMode = true
+	DB_URL = ""
+	DBConn *sql.DB
 )
 
 type TukDBConnection struct {
@@ -188,22 +187,6 @@ type IdMap struct {
 	Lid string `json:"lid"`
 	Mid string `json:"mid"`
 }
-type EventAcks struct {
-	Action       string
-	LastInsertId int64
-	Where        string
-	Value        string
-	Cnt          int
-	EventAck     []EventAck
-}
-type EventAck struct {
-	Id           int64  `json:"id"`
-	CreationTime string `json:"creationtime"`
-	EventID      int64  `json:"eventid"`
-	User         string `json:"user"`
-	Org          string `json:"org"`
-	Role         string `json:"role"`
-}
 
 // sort interface for events
 type EventsList []Event
@@ -218,6 +201,37 @@ func (e EventsList) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
+// sort interface for idmaps
+type IDMapsList []IdMap
+
+func (e IDMapsList) Len() int {
+	return len(e)
+}
+func (e IDMapsList) Less(i, j int) bool {
+	return e[i].Lid > e[j].Lid
+}
+func (e IDMapsList) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+// sort interface for Workflows
+type WorkflowsList []Workflow
+
+func (e WorkflowsList) Len() int {
+	return len(e)
+}
+func (e WorkflowsList) Less(i, j int) bool {
+	return e[i].Pathway > e[j].Pathway
+}
+func (e WorkflowsList) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+var debugMode bool
+
+func SetDebugMode(debug bool) {
+	debugMode = debug
+}
 func (i *TukDBConnection) InitialiseDatabase(mysqlFile string) error {
 	if DBConn != nil {
 		DBConn.Close()
@@ -575,7 +589,9 @@ func GetWorkflowDefinitionNames() map[string]string {
 			}
 		}
 	}
-	log.Printf("Returning %v XDW Config files", len(names))
+	if debugMode {
+		log.Printf("Returning %v XDW Config files", len(names))
+	}
 	return names
 }
 func GetWorkflowXDSMetaNames() []string {
@@ -590,7 +606,9 @@ func GetWorkflowXDSMetaNames() []string {
 			}
 		}
 	}
-	log.Printf("Returning %v XDS Meta files", len(xdwdefs))
+	if debugMode {
+		log.Printf("Returning %v XDS Meta files", len(xdwdefs))
+	}
 	return xdwdefs
 }
 func GetWorkflowDefinitions(name string) (XDWS, error) {
@@ -959,7 +977,9 @@ func GetTaskNotes(pwy string, nhsid string, taskid int, ver int) string {
 				notes = notes + note.Comments + "\n"
 			}
 		}
-		log.Printf("Found TaskId %v Notes %s", taskid, notes)
+		if debugMode {
+			log.Printf("Found TaskId %v Notes %s", taskid, notes)
+		}
 	}
 	return notes
 }
