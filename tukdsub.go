@@ -494,6 +494,9 @@ func (i *DSUBEvent) createSubscriptions() error {
 					newSub.Pathway = i.Pathway
 					newSub.Expression = brokerSub.Expression
 					newSub.Topic = tukcnst.DSUB_TOPIC_TYPE_CODE
+					newSub.User = "DSUB"
+					newSub.Org = "ICB"
+					newSub.Role = "BROKER"
 					newsubs := tukdbint.Subscriptions{Action: tukcnst.INSERT}
 					newsubs.Subscriptions = append(newsubs.Subscriptions, newSub)
 					log.Println("Registering Subscription with Event Service")

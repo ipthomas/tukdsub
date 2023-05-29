@@ -28,11 +28,14 @@ var (
 	SeedRoot   = "1.2.40.0.13.1.1.3542466645."
 	IdSeed     = getIdIncrementSeed(5)
 	CodeSystem = make(map[string]string)
-	DebugMode  = true
+	debugMode  = false
 )
 
 func init() {
 	ServerName, _ = os.Hostname()
+}
+func SetDebugMode(debug bool) {
+	debugMode = debug
 }
 
 // TemplateFuncMap returns a functionMap of tukutils for use in templates
@@ -86,7 +89,9 @@ func SplitXDWKey(xdwkey string) (string, string) {
 func SetCodeSystem(cs map[string]string) {
 	CodeSystem = cs
 	log.Printf("Loaded %v code system key values", len(CodeSystem))
-	Log(CodeSystem)
+	if debugMode {
+		Log(CodeSystem)
+	}
 }
 
 // LoadCodeSystemFile loads the `codesystem.json` file from the `configs` folder
@@ -101,7 +106,9 @@ func LoadCodeSystemFile(codesystemFile string) error {
 		return err
 	}
 	log.Printf("Loaded %v code system key values", len(CodeSystem))
-	Log(CodeSystem)
+	if debugMode {
+		Log(CodeSystem)
+	}
 	return nil
 }
 
@@ -164,7 +171,7 @@ func MonitorApp() {
 
 // Log takes any struc as input and logs out the struc as a json string
 func Log(i interface{}) {
-	if DebugMode {
+	if debugMode {
 		b, _ := json.MarshalIndent(i, "", "  ")
 		log.Println(string(b))
 	}
@@ -226,16 +233,13 @@ func GetDurationSince(stime string) string {
 // GetDuration takes 2 times as string inputs in RFC3339 format (yyyy-MM-ddThh:mm:ssZ) and returns the duration in days, hours and mins in a 'pretty format' eg '2 Days 0 Hrs 52 Mins' between the provided times as a string
 //
 //	Example : GetDuration("2022-09-04T13:15:20Z", "2022-09-14T16:20:01Z") returns `10 Days 3 Hrs 4 Mins`
-func GetDuration(stime string, etime string) string {
-	log.Println("Obtaining time Duration between - " + stime + " and " + etime)
-	st := GetTimeFromString(stime)
-	et := GetTimeFromString(etime)
-	dur := et.Sub(st)
+func GetDuration(dur time.Duration) string {
 	days := 0
 	hrs := int(dur.Hours())
 	min := int(dur.Minutes())
 	secs := int(dur.Seconds())
 	if secs < 60 {
+		log.Printf("Returning %v Secs", secs)
 		return strconv.Itoa(secs) + " Secs"
 	}
 	if hrs > 24 {

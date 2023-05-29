@@ -44,7 +44,7 @@ type Statics struct {
 type Static struct {
 	Id      int64  `json:"id"`
 	Name    string `json:"name"`
-	Content string `json:"content"`
+	Content []byte `json:"content"`
 }
 type ServiceStates struct {
 	Action       string         `json:"action"`
@@ -76,6 +76,11 @@ type Subscription struct {
 	Pathway    string `json:"pathway"`
 	Topic      string `json:"topic"`
 	Expression string `json:"expression"`
+	Email      string `json:"email"`
+	NhsId      string `json:"nhsid"`
+	User       string `json:"user"`
+	Org        string `json:"org"`
+	Role       string `json:"role"`
 }
 type Subscriptions struct {
 	Action        string         `json:"action"`
@@ -380,7 +385,7 @@ func (i *Subscriptions) newEvent() error {
 
 		for rows.Next() {
 			sub := Subscription{}
-			if err := rows.Scan(&sub.Id, &sub.Created, &sub.BrokerRef, &sub.Pathway, &sub.Topic, &sub.Expression); err != nil {
+			if err := rows.Scan(&sub.Id, &sub.Created, &sub.BrokerRef, &sub.Pathway, &sub.Topic, &sub.Expression, &sub.Email, &sub.NhsId); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -991,16 +996,27 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 			tint64 := i.Field(f).Interface().(int64)
 			if tint64 > 0 {
 				params[strings.ToLower(structType.Field(f).Name)] = tint64
+				log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), tint64)
 			}
 		} else {
 			if strings.EqualFold(structType.Field(f).Name, "Version") || strings.EqualFold(structType.Field(f).Name, "TaskId") {
 				tint := i.Field(f).Interface().(int)
 				if tint != -1 {
 					params[strings.ToLower(structType.Field(f).Name)] = tint
+					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), tint)
 				}
 			} else {
-				if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
-					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+				if strings.EqualFold(structType.Field(f).Name, "content") {
+					if blob, ok := i.Field(f).Interface().([]byte); !ok {
+						if len(blob) > 1 {
+							params[strings.ToLower(structType.Field(f).Name)] = blob
+						}
+					}
+				} else {
+					if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
+						params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+						log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
+					}
 				}
 			}
 		}
