@@ -196,8 +196,8 @@ func (i *DSUBEvent) newEvent() error {
 	}
 	return err
 }
-func SetDebugMode(debug bool) {
-	debugMode = debug
+func SetDebugMode(debugmode bool) {
+	debugMode = debugmode
 	tukhttp.SetDebugMode(debugMode)
 }
 
