@@ -172,6 +172,8 @@ type DSUB_Interface interface {
 	newEvent() error
 }
 
+var debugMode = false
+
 func New_Transaction(i DSUB_Interface) error {
 	return i.newEvent()
 }
@@ -193,6 +195,10 @@ func (i *DSUBEvent) newEvent() error {
 		i.processBrokerEventMessage()
 	}
 	return err
+}
+func SetDebugMode(debug bool) {
+	debugMode = debug
+	tukhttp.SetDebugMode(debugMode)
 }
 
 // creates a DSUBNotifyMessage from the EventMessage and populates a new TUKEvent with the DSUBNotifyMessage values
