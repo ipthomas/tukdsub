@@ -44,7 +44,7 @@ type Statics struct {
 type Static struct {
 	Id      int64  `json:"id"`
 	Name    string `json:"name"`
-	Content []byte `json:"content"`
+	Content string `json:"content"`
 }
 type ServiceStates struct {
 	Action       string         `json:"action"`
@@ -188,9 +188,10 @@ type IdMaps struct {
 	LidMap       []IdMap
 }
 type IdMap struct {
-	Id  int64  `json:"id"`
-	Lid string `json:"lid"`
-	Mid string `json:"mid"`
+	Id   int64  `json:"id"`
+	User string `json:"user"`
+	Lid  string `json:"lid"`
+	Mid  string `json:"mid"`
 }
 
 // sort interface for events
@@ -233,7 +234,7 @@ func (e WorkflowsList) Swap(i, j int) {
 }
 
 var debugMode bool
-var cache = make(map[string]string)
+var idmapsCache = []IdMap{}
 
 func SetDebugMode(debug bool) {
 	debugMode = debug
@@ -583,7 +584,7 @@ func (i *WorkflowStates) newEvent() error {
 	}
 	return err
 }
-func GetWorkflowDefinitionNames() map[string]string {
+func GetWorkflowDefinitionNames(user string) map[string]string {
 	names := make(map[string]string)
 	xdws := XDWS{Action: tukcnst.SELECT}
 	xdw := XDW{IsXDSMeta: false}
@@ -591,12 +592,12 @@ func GetWorkflowDefinitionNames() map[string]string {
 	if err := xdws.newEvent(); err == nil {
 		for _, xdw := range xdws.XDW {
 			if xdw.Id > 0 {
-				names[xdw.Name] = GetIDMapsMappedId(xdw.Name)
+				names[xdw.Name] = GetIDMapsMappedId(user, xdw.Name)
 			}
 		}
 	}
 	if debugMode {
-		log.Printf("Returning %v XDW Config files", len(names))
+		log.Printf("Returning %v XDW Definition Names", len(names))
 	}
 	return names
 }
@@ -617,7 +618,7 @@ func GetWorkflowXDSMetaNames() []string {
 	}
 	return xdwdefs
 }
-func GetWorkflowDefinitions(name string) (XDWS, error) {
+func GetWorkflowDefinitions() (XDWS, error) {
 	xdws := XDWS{Action: tukcnst.SELECT}
 	err := xdws.newEvent()
 	return xdws, err
@@ -773,39 +774,34 @@ func cachIDMaps() {
 	if err := idmaps.newEvent(); err != nil {
 		log.Println(err.Error())
 	}
-	for _, v := range idmaps.LidMap {
-		if v.Id > 0 {
-			cache[v.Lid] = v.Mid
-		}
-	}
-	log.Printf("Cached %v CodeMaps", len(cache))
+	idmapsCache = idmaps.LidMap
+	log.Printf("Total CodeMaps: %v", len(idmapsCache))
 }
-func GetIDMaps() IdMaps {
-	idmaps := IdMaps{Action: tukcnst.SELECT}
-	if err := idmaps.newEvent(); err != nil {
-		log.Println(err.Error())
-	}
-	return idmaps
-}
-func GetIDMapsMappedId(localid string) string {
-	if len(cache) == 0 {
+func GetIDMapsMappedId(user string, localid string) string {
+	if len(idmapsCache) == 0 {
 		cachIDMaps()
 	}
-	if mid, ok := cache[localid]; ok {
-		return mid
+	if user == "" {
+		user = "system"
+	}
+	for _, idmap := range idmapsCache {
+		if idmap.Lid == localid && idmap.User == user {
+			return idmap.Mid
+		}
 	}
 	return localid
 }
-func GetIDMapsLocalId(mid string) string {
-	idmaps := IdMaps{Action: tukcnst.SELECT}
-	idmap := IdMap{Mid: mid}
-	idmaps.LidMap = append(idmaps.LidMap, idmap)
-	if err := idmaps.newEvent(); err != nil {
-		log.Println(err.Error())
-		return mid
+func GetIDMapsLocalId(user string, mid string) string {
+	if len(idmapsCache) == 0 {
+		cachIDMaps()
 	}
-	if idmaps.Cnt == 1 {
-		return idmaps.LidMap[1].Lid
+	if user == "" {
+		user = "system"
+	}
+	for _, idmap := range idmapsCache {
+		if idmap.Mid == mid && idmap.User == user {
+			return idmap.Lid
+		}
 	}
 	return mid
 }
@@ -840,7 +836,7 @@ func (i *IdMaps) newEvent() error {
 		}
 		for rows.Next() {
 			idmap := IdMap{}
-			if err := rows.Scan(&idmap.Id, &idmap.Lid, &idmap.Mid); err != nil {
+			if err := rows.Scan(&idmap.Id, &idmap.Lid, &idmap.Mid, &idmap.User); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -1013,17 +1009,9 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), tint)
 				}
 			} else {
-				if strings.EqualFold(structType.Field(f).Name, "content") {
-					if blob, ok := i.Field(f).Interface().([]byte); !ok {
-						if len(blob) > 1 {
-							params[strings.ToLower(structType.Field(f).Name)] = blob
-						}
-					}
-				} else {
-					if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
-						params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
-						log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
-					}
+				if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
+					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
 				}
 			}
 		}
@@ -1077,7 +1065,8 @@ func createPreparedStmnt(action string, table string, params map[string]interfac
 				vals = append(vals, params["nhsid"])
 				vals = append(vals, params["version"])
 			case tukcnst.ID_MAPS:
-				stmntStr = "UPDATE idmaps SET lid = ?, mid = ? WHERE id = ?"
+				stmntStr = "UPDATE idmaps SET lid = ?, mid = ? WHERE id = ? AND user = ?"
+				vals = append(vals, params["user"])
 				vals = append(vals, params["lid"])
 				vals = append(vals, params["mid"])
 				vals = append(vals, params["id"])
