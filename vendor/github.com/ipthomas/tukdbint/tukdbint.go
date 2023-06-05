@@ -1009,7 +1009,7 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), tint)
 				}
 			} else {
-				if i.Field(f).Interface() != nil && i.Field(f).Interface() != "" {
+				if i.Field(f).Interface() != nil && len(i.Field(f).Interface().(string)) > 0 {
 					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
 					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
 				}
@@ -1065,10 +1065,10 @@ func createPreparedStmnt(action string, table string, params map[string]interfac
 				vals = append(vals, params["nhsid"])
 				vals = append(vals, params["version"])
 			case tukcnst.ID_MAPS:
-				stmntStr = "UPDATE idmaps SET lid = ?, mid = ? WHERE id = ? AND user = ?"
-				vals = append(vals, params["user"])
+				stmntStr = "UPDATE idmaps SET lid = ?, mid = ?, user = ? WHERE id = ?"
 				vals = append(vals, params["lid"])
 				vals = append(vals, params["mid"])
+				vals = append(vals, params["user"])
 				vals = append(vals, params["id"])
 			}
 		case tukcnst.DELETE:
