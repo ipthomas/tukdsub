@@ -769,8 +769,10 @@ func (i *Templates) newEvent() error {
 	}
 	return err
 }
-func cachIDMaps() {
+func cachIDMaps(user string) {
 	idmaps := IdMaps{Action: tukcnst.SELECT}
+	idmap := IdMap{User: user}
+	idmaps.LidMap = append(idmaps.LidMap, idmap)
 	if err := idmaps.newEvent(); err != nil {
 		log.Println(err.Error())
 	}
@@ -779,7 +781,7 @@ func cachIDMaps() {
 }
 func GetIDMapsMappedId(user string, localid string) string {
 	if len(idmapsCache) == 0 {
-		cachIDMaps()
+		cachIDMaps(user)
 	}
 	if user == "" {
 		user = "system"
@@ -792,12 +794,13 @@ func GetIDMapsMappedId(user string, localid string) string {
 	return localid
 }
 func GetIDMapsLocalId(user string, mid string) string {
-	if len(idmapsCache) == 0 {
-		cachIDMaps()
-	}
 	if user == "" {
 		user = "system"
 	}
+	if len(idmapsCache) == 0 {
+		cachIDMaps(user)
+	}
+
 	for _, idmap := range idmapsCache {
 		if idmap.Mid == mid && idmap.User == user {
 			return idmap.Lid
@@ -1065,11 +1068,17 @@ func createPreparedStmnt(action string, table string, params map[string]interfac
 				vals = append(vals, params["nhsid"])
 				vals = append(vals, params["version"])
 			case tukcnst.ID_MAPS:
-				stmntStr = "UPDATE idmaps SET lid = ?, mid = ?, user = ? WHERE id = ?"
-				vals = append(vals, params["lid"])
-				vals = append(vals, params["mid"])
-				vals = append(vals, params["user"])
+				stmntStr = "UPDATE idmaps SET "
+				var paramStr string
+				for param, val := range params {
+					if val != "" && param != "id" {
+						paramStr = paramStr + param + "= ?, "
+						vals = append(vals, val)
+					}
+				}
 				vals = append(vals, params["id"])
+				paramStr = strings.TrimSuffix(paramStr, ", ")
+				stmntStr = stmntStr + paramStr + " WHERE id = ?"
 			}
 		case tukcnst.DELETE:
 			stmntStr = "DELETE FROM " + table + " WHERE "
