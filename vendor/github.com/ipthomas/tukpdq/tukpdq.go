@@ -945,7 +945,7 @@ func (i *PDQQuery) setPatient() error {
 	case tukcnst.PDQ_SERVER_TYPE_CGL:
 		i.Request = []byte(i.Server_URL + i.NHS_ID)
 		httpReq := tukhttp.CGLRequest{
-			Request:      i.Server_URL + i.NHS_ID,
+			URL:          i.Server_URL + i.NHS_ID,
 			X_Api_Key:    i.CGL_X_Api_Key,
 			X_Api_Secret: i.CGL_X_Api_Secret,
 		}
