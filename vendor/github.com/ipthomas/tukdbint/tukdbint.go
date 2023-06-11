@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"time"
 
 	"github.com/ipthomas/tukcnst"
-	"github.com/ipthomas/tukhttp"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -288,13 +286,9 @@ type TUK_DB_Interface interface {
 	newEvent() error
 }
 
-// NewDBEvent takes an Interface (struct Events, Workflows, Subscriptions, XDWS, TukDBConnection) and executes a mysql request. The response is poputlated into the interface struct.
-// If DB_URL = "" the sql query is executed against the DBConn established using a DSN, if a value is present in DB_URL, the query is sent to the API Gateway URL (DB_URL) as a json string of the provided interface struct
 func NewDBEvent(i TUK_DB_Interface) error {
 	return i.newEvent()
 }
-
-// functions for mysql DB access via DSN
 
 func (i *TukDBConnection) newEvent() error {
 	var err error
@@ -356,9 +350,6 @@ func GetSubscriptions(brokerref string, pathway string, expression string) Subsc
 	return subs
 }
 func (i *Subscriptions) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_SUBSCRIPTIONS
 	var rows *sql.Rows
@@ -412,9 +403,6 @@ func GetEvents(user string, pathway string, nhsid string, expression string, tas
 	return events
 }
 func (i *Events) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_EVENTS
 	var rows *sql.Rows
@@ -492,9 +480,6 @@ func GetWorkflows(pathway string, nhsid string, xdwkey string, xdwuid string, ve
 	return wfs
 }
 func (i *Workflows) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_WORKFLOWS
 	var rows *sql.Rows
@@ -654,9 +639,6 @@ func SetWorkflowDefinition(name string, config string, isxdsmeta bool) error {
 	return xdws.newEvent()
 }
 func (i *XDWS) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_XDWS
 	var rows *sql.Rows
@@ -722,9 +704,6 @@ func SetTemplate(templatename string, isxml bool, templatestr string) error {
 	return tmplts.newEvent()
 }
 func (i *Templates) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_TEMPLATES
 	var rows *sql.Rows
@@ -809,9 +788,6 @@ func GetIDMapsLocalId(user string, mid string) string {
 	return mid
 }
 func (i *IdMaps) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_IDMAPS
 	var rows *sql.Rows
@@ -881,9 +857,6 @@ func SetServiceState(servicename string, state string) error {
 	return srvcs.newEvent()
 }
 func (i *ServiceStates) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_SERVICESTATES
 	var rows *sql.Rows
@@ -929,9 +902,6 @@ func (i *ServiceStates) newEvent() error {
 	return err
 }
 func (i *Statics) newEvent() error {
-	if DB_URL != "" {
-		return i.newAWSEvent()
-	}
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_STATICS
 	var rows *sql.Rows
@@ -1117,79 +1087,4 @@ func setLastID(ctx context.Context, sqlStmnt *sql.Stmt, vals []interface{}) (int
 		}
 	}
 	return 0, nil
-}
-
-// functions for AWS Aurora DB Access via AWS API GW URL
-func (i *Statics) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.STATICS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *ServiceStates) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.SERVICE_STATES, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *Subscriptions) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.SUBSCRIPTIONS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *Events) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.EVENTS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *Workflows) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.WORKFLOWS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *XDWS) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.XDWS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *IdMaps) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.ID_MAPS, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func (i *Templates) newAWSEvent() error {
-	body, _ := json.Marshal(i)
-	awsreq := aws_APIRequest(i.Action, tukcnst.TEMPLATES, body)
-	if err := tukhttp.NewRequest(&awsreq); err != nil {
-		return err
-	}
-	return json.Unmarshal(awsreq.Response, &i)
-}
-func aws_APIRequest(action string, resource string, body []byte) tukhttp.AWS_APIRequest {
-	return tukhttp.AWS_APIRequest{
-		URL:      DB_URL,
-		Act:      action,
-		Resource: resource,
-		Timeout:  5,
-		Body:     body,
-	}
 }

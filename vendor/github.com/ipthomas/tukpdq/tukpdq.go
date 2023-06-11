@@ -37,14 +37,14 @@ type PDQQuery struct {
 	Town             string           `json:"town"`
 	City             string           `json:"city"`
 	Country          string           `json:"country"`
-	Timeout          int64            `json:",omitempty"`
-	Cache            bool             `json:",omitempty"`
+	Timeout          int              `json:",omitempty"`
 	Used_PID         string           `json:",omitempty"`
 	Used_PID_OID     string           `json:",omitempty"`
 	Request          []byte           `json:",omitempty"`
 	Response         []byte           `json:",omitempty"`
 	StatusCode       int              `json:",omitempty"`
 	Count            int              `json:",omitempty"`
+	DebugMode        bool             `json:",omitempty"`
 	PDQv3Response    *PDQv3Response   `json:",omitempty"`
 	PIXv3Response    *PIXv3Response   `json:",omitempty"`
 	PIXmResponse     *PIXmResponse    `json:",omitempty"`
@@ -119,7 +119,6 @@ type Delphi struct {
 		Discharge any `json:"Discharge,omitempty"`
 	} `json:"Data,omitempty"`
 }
-
 type CGLUserResponse struct {
 	Data struct {
 		Client struct {
@@ -881,11 +880,6 @@ type PDQInterface interface {
 	pdq() error
 }
 
-var (
-	pat_cache = make(map[string][]byte)
-	DebugMode = false
-)
-
 func New_Transaction(i PDQInterface) error {
 	return i.pdq()
 }
@@ -925,29 +919,23 @@ func (i *PDQQuery) setPDQ_ID() error {
 		}
 	}
 	if i.Used_PID == "" || i.Used_PID_OID == "" {
-		return errors.New("invalid request - no suitable id and oid input values found which can be used for pdq query")
+		return errors.New("invalid request - no suitable patient id and oid provided that can be used for pdq query")
 	}
 	return nil
 }
 func (i *PDQQuery) setPatient() error {
-	if i.Cache && i.Server_Mode != tukcnst.PDQ_SERVER_TYPE_CGL {
-		if _, ok := pat_cache[i.Used_PID]; ok {
-			log.Printf("Cache entry found for Patient ID %s", i.Used_PID)
-			i.StatusCode = http.StatusOK
-			i.Response = pat_cache[i.Used_PID]
-			return nil
-		}
-	}
 	var tmplt *template.Template
 	var err error
 	i.StatusCode = http.StatusOK
 	switch i.Server_Mode {
 	case tukcnst.PDQ_SERVER_TYPE_CGL:
 		i.Request = []byte(i.Server_URL + i.NHS_ID)
-		httpReq := tukhttp.CGLRequest{
+		httpReq := tukhttp.HTTPRequest{
+			Method:       http.MethodGet,
 			URL:          i.Server_URL + i.NHS_ID,
 			X_Api_Key:    i.CGL_X_Api_Key,
 			X_Api_Secret: i.CGL_X_Api_Secret,
+			DebugMode:    i.DebugMode,
 		}
 		if err = tukhttp.NewRequest(&httpReq); err == nil {
 			if httpReq.StatusCode == http.StatusOK {
@@ -990,9 +978,6 @@ func (i *PDQQuery) setPatient() error {
 										pat.PIDOID = i.MRN_OID
 									}
 								}
-								if i.Cache {
-									pat_cache[i.Used_PID] = i.Response
-								}
 							}
 						}
 					}
@@ -1021,9 +1006,6 @@ func (i *PDQQuery) setPatient() error {
 										i.MRN_ID = pid.Extension
 									}
 								}
-								if i.Cache {
-									pat_cache[i.Used_PID] = i.Response
-								}
 							}
 						}
 					}
@@ -1032,7 +1014,9 @@ func (i *PDQQuery) setPatient() error {
 		}
 	case tukcnst.PDQ_SERVER_TYPE_IHE_PIXM:
 		i.Request = []byte(i.Server_URL)
-		httpReq := tukhttp.PIXmRequest{
+		httpReq := tukhttp.HTTPRequest{
+			Server:  tukcnst.PDQ_SERVER_TYPE_IHE_PIXM,
+			Method:  http.MethodGet,
 			URL:     i.Server_URL,
 			PID_OID: i.Used_PID_OID,
 			PID:     i.Used_PID,
@@ -1089,9 +1073,6 @@ func (i *PDQQuery) setPatient() error {
 								i.Country = rsppat.Resource.Address[0].Country
 							}
 						}
-						if i.Cache {
-							pat_cache[i.Used_PID] = i.Response
-						}
 					}
 				}
 			}
@@ -1103,7 +1084,8 @@ func (i *PDQQuery) setPatient() error {
 	return err
 }
 func (i *PDQQuery) newIHESOAPRequest(soapaction string) error {
-	httpReq := tukhttp.SOAPRequest{
+	httpReq := tukhttp.HTTPRequest{
+		Method:     http.MethodPost,
 		URL:        i.Server_URL,
 		SOAPAction: soapaction,
 		Body:       i.Request,

@@ -12,157 +12,75 @@ import (
 	"github.com/ipthomas/tukutil"
 )
 
-var DebugMode = true
-
-type CGLRequest struct {
+type HTTPRequest struct {
+	Act          string
+	Version      int
+	Server       string
+	Method       string
 	URL          string
 	X_Api_Key    string
 	X_Api_Secret string
+	PID_OID      string
+	PID          string
+	SOAPAction   string
+	ContentType  string
+	Body         []byte
+	Timeout      int
 	StatusCode   int
 	Response     []byte
+	DebugMode    bool
 }
-type PIXmRequest struct {
-	URL        string
-	PID_OID    string
-	PID        string
-	Timeout    int64
-	StatusCode int
-	Response   []byte
-}
-type MHDRequest struct {
-	URL        string
-	PID_OID    string
-	PID        string
-	Timeout    int64
-	StatusCode int
-	Response   []byte
-}
-type SOAPRequest struct {
-	URL        string
-	SOAPAction string
-	Timeout    int64
-	StatusCode int
-	Body       []byte
-	Response   []byte
-}
-type AWS_APIRequest struct {
-	URL         string
-	Version     int
-	Act         string
-	Resource    string
-	ContentType string
-	Timeout     int64
-	StatusCode  int
-	Body        []byte
-	Response    []byte
-}
-
 type TukHTTPInterface interface {
 	newRequest() error
 }
 
-var debugMode bool = false
-
-func SetDebugMode(debug bool) {
-	debugMode = debug
-}
 func NewRequest(i TukHTTPInterface) error {
 	return i.newRequest()
 }
-func (i *SOAPRequest) newRequest() error {
+func (i *HTTPRequest) newRequest() error {
 	var err error
-	var header *http.Header
-	if i.Timeout == 0 {
-		i.Timeout = 15
+	var header http.Header
+	header.Add(tukcnst.ACCEPT, tukcnst.ALL)
+	header.Add(tukcnst.CONTENT_TYPE, i.ContentType)
+	header.Add(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
+	if i.X_Api_Key != "" && i.X_Api_Secret != "" {
+		header.Add("X-API-KEY", i.X_Api_Key)
+		header.Add("X-API-SECRET", i.X_Api_Secret)
 	}
 	if i.SOAPAction != "" {
 		header.Set(tukcnst.SOAP_ACTION, i.SOAPAction)
 	}
-	header.Set(tukcnst.CONTENT_TYPE, tukcnst.SOAP_XML)
-	header.Set(tukcnst.ACCEPT, tukcnst.ALL)
-	header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
-	i.logRequest(*header)
-	if i.StatusCode, i.Response, err = sendHttpRequest(http.MethodPost, header, i.URL, string(i.Body), int(i.Timeout)); err != nil {
-		log.Println(err.Error())
-		debugMode = true
-	}
-	i.logResponse()
-	return err
-}
-func (i *PIXmRequest) newRequest() error {
-	var err error
-	var header *http.Header
 	if i.Timeout == 0 {
 		i.Timeout = 15
 	}
-	header.Set(tukcnst.ACCEPT, tukcnst.ALL)
-	header.Set(tukcnst.CONNECTION, tukcnst.KEEP_ALIVE)
-	i.URL = i.URL + "?identifier=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
-	i.logRequest(*header)
-	if i.StatusCode, i.Response, err = sendHttpRequest(http.MethodGet, header, i.URL, "", int(i.Timeout)); err != nil {
+	if i.Server == "pixm" && i.Method == http.MethodGet {
+		i.URL = i.URL + "?identifier=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
+	}
+	if i.Server == "mhd" && i.Method == http.MethodGet {
+		i.URL = i.URL + "?patient.identifier=urn:oid:=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
+	}
+	i.logReq(header, i.URL, string(i.Body))
+	if i.StatusCode, i.Response, err = i.sendHttpRequest(header); err != nil {
 		log.Println(err.Error())
-		debugMode = true
 	}
-	i.logResponse()
+	i.logRsp(i.StatusCode, string(i.Response))
 	return err
+
 }
-func (i *MHDRequest) newRequest() error {
-	var err error
-	var header *http.Header
-	if i.Timeout == 0 {
-		i.Timeout = 15
-	}
-	i.URL = i.URL + "?patient.identifier=urn:oid:=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
-	i.logRequest(*header)
-	if i.StatusCode, i.Response, err = sendHttpRequest(http.MethodGet, header, i.URL, "", int(i.Timeout)); err != nil {
-		log.Println(err.Error())
-		debugMode = true
-	}
-	i.logResponse()
-	return err
-}
-func (i *CGLRequest) newRequest() error {
-	var err error
-	var header *http.Header
-	header.Set(tukcnst.ACCEPT, tukcnst.APPLICATION_JSON)
-	header.Set("X-API-KEY", i.X_Api_Key)
-	header.Set("X-API-SECRET", i.X_Api_Secret)
-	i.logRequest(*header)
-	if i.StatusCode, i.Response, err = sendHttpRequest(http.MethodGet, header, i.URL, "", 15); err != nil {
-		log.Println(err.Error())
-		debugMode = true
-	}
-	i.logResponse()
-	return err
-}
-func (i *AWS_APIRequest) newRequest() error {
-	var err error
-	var header *http.Header
-	header.Add(tukcnst.CONTENT_TYPE, i.ContentType)
-	if i.Timeout == 0 {
-		i.Timeout = 5
-	}
-	i.logRequest(*header)
-	if i.StatusCode, i.Response, err = sendHttpRequest(http.MethodPost, header, i.URL+i.Resource, string(i.Body), int(i.Timeout)); err != nil {
-		log.Println(err.Error())
-		debugMode = true
-	}
-	i.logResponse()
-	return err
-}
-func sendHttpRequest(method string, header *http.Header, url string, body string, timeout int) (int, []byte, error) {
+func (i *HTTPRequest) sendHttpRequest(header http.Header) (int, []byte, error) {
 	var err error
 	var req *http.Request
 	var rsp *http.Response
 	var bytes []byte
-	var bodycontent *strings.Reader
-	req.Header = *header
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	req.Header = header
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(i.Timeout)*time.Second)
 	defer cancel()
-	if method == http.MethodPost && body != "" {
-		bodycontent = strings.NewReader(body)
+	if i.Method == http.MethodPost && string(i.Body) != "" {
+		req, err = http.NewRequest(i.Method, i.URL, strings.NewReader(string(i.Body)))
+	} else {
+		req, err = http.NewRequest(i.Method, i.URL, nil)
 	}
-	if req, err = http.NewRequest(method, url, bodycontent); err == nil {
+	if err == nil {
 		if rsp, err = http.DefaultClient.Do(req.WithContext(ctx)); err == nil {
 			defer rsp.Body.Close()
 			if bytes, err = io.ReadAll(rsp.Body); err == nil {
@@ -170,51 +88,11 @@ func sendHttpRequest(method string, header *http.Header, url string, body string
 			}
 		}
 	}
-	if err != nil {
-		log.Println(err.Error())
-		debugMode = true
-	}
 	return rsp.StatusCode, bytes, err
 }
-func (i *AWS_APIRequest) logRequest(headers http.Header) {
-	logReq(i.StatusCode, i.URL, string(i.Body))
-}
-func (i *AWS_APIRequest) logResponse() {
-	logRsp(i.StatusCode, string(i.Response))
-}
-func (i *SOAPRequest) logRequest(headers http.Header) {
-	logReq(headers, i.URL, string(i.Body))
-}
-func (i *SOAPRequest) logResponse() {
-	logRsp(i.StatusCode, string(i.Response))
-
-}
-func (i *PIXmRequest) logRequest(headers http.Header) {
-	logReq(headers, i.URL, "")
-
-}
-func (i *MHDRequest) logRequest(headers http.Header) {
-	logReq(headers, i.URL, "")
-
-}
-func (i *PIXmRequest) logResponse() {
-	logRsp(i.StatusCode, string(i.Response))
-
-}
-func (i *MHDRequest) logResponse() {
-	logRsp(i.StatusCode, string(i.Response))
-
-}
-func (i *CGLRequest) logRequest(headers http.Header) {
-	logReq(headers, i.URL, "")
-
-}
-func (i *CGLRequest) logResponse() {
-	logRsp(i.StatusCode, string(i.Response))
-}
-func logReq(headers interface{}, url string, body string) {
-	if debugMode {
-		log.Printf("HTTP GET Request Headers")
+func (i *HTTPRequest) logReq(headers interface{}, url string, body string) {
+	if i.DebugMode {
+		log.Printf("HTTP Request Headers")
 		tukutil.Log(headers)
 		log.Printf("\nHTTP Request\n-- URL = %s", url)
 		if body != "" {
@@ -222,8 +100,8 @@ func logReq(headers interface{}, url string, body string) {
 		}
 	}
 }
-func logRsp(statusCode int, response string) {
-	if debugMode {
+func (i *HTTPRequest) logRsp(statusCode int, response string) {
+	if i.DebugMode {
 		log.Printf("HTML Response - Status Code = %v\n-- Response--\n%s", statusCode, response)
 	}
 }

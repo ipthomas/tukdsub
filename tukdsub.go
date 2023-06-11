@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"log"
+	"net/http"
 	"strings"
 	"text/template"
 
@@ -170,8 +171,6 @@ type DSUB_Interface interface {
 	newEvent() error
 }
 
-var isdebugMode = false
-
 func New_Transaction(i DSUB_Interface) error {
 	return i.newEvent()
 }
@@ -196,7 +195,6 @@ func (i *DSUBEvent) newEvent() error {
 }
 func SetDebug(isdebug bool) {
 	isdebugMode = isdebug
-	tukhttp.SetDebugMode(isdebugMode)
 }
 
 // creates a DSUBNotifyMessage from the EventMessage and populates a new TUKEvent with the DSUBNotifyMessage values
@@ -355,11 +353,12 @@ func (i *DSUBEvent) newDSUBCancelMessage() {
 		log.Println(err.Error())
 		return
 	}
-	soapReq := tukhttp.SOAPRequest{
+	soapReq := tukhttp.HTTPRequest{
+		Method:     http.MethodPost,
 		URL:        i.BrokerURL,
 		SOAPAction: tukcnst.SOAP_ACTION_UNSUBSCRIBE_REQUEST,
 		Body:       b.Bytes(),
-		Timeout:    2,
+		Timeout:    5,
 	}
 	log.Printf("Sending Cancel Request to DSUB Broker %s", i.BrokerURL)
 	err = tukhttp.NewRequest(&soapReq)
@@ -474,7 +473,8 @@ func (i *DSUBEvent) createSubscriptions() error {
 					log.Println(err.Error())
 					return err
 				}
-				soapReq := tukhttp.SOAPRequest{
+				soapReq := tukhttp.HTTPRequest{
+					Method:     http.MethodPost,
 					URL:        i.BrokerURL,
 					SOAPAction: tukcnst.SOAP_ACTION_SUBSCRIBE_REQUEST,
 					Body:       b.Bytes(),
