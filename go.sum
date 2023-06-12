@@ -20,6 +20,10 @@ github.com/ipthomas/tukhttp v1.3.19 h1:jK9L2XXAIUy7uUMWFaU8j6WqiTtfKfChheodxTscQ
 github.com/ipthomas/tukhttp v1.3.19/go.mod h1:LQUUjwleozOeXz5bI8+oYRNyH772gj+OXoaGs0dyE0Q=
 github.com/ipthomas/tukhttp v1.3.20 h1:R9A7fO7dzzK2EQkl6nOw+NDPGp1Cm/VEV3eB7y/IxyI=
 github.com/ipthomas/tukhttp v1.3.20/go.mod h1:LQUUjwleozOeXz5bI8+oYRNyH772gj+OXoaGs0dyE0Q=
+github.com/ipthomas/tukhttp v1.3.21 h1:pY7VRCEvGGsc3M3QBCfZjGAxgnbennS7IKVKiAfXNFU=
+github.com/ipthomas/tukhttp v1.3.21/go.mod h1:x7AP9Jr4wT+AFTuxCiiwLIN6Oxh1wfZ6EATvn2YEiXg=
+github.com/ipthomas/tukhttp v1.3.22 h1:MQWrHhyS6EJJujVY1KAIIhdxYk6lz2sRR9a9SRqaGoQ=
+github.com/ipthomas/tukhttp v1.3.22/go.mod h1:4Jpu98WCu90iubacrsio3RNdRWWgUUpXXBBF6ei78ig=
 github.com/ipthomas/tukpdq v1.3.16 h1:fEPDdBTCBOrG5YHekop6FlRU2Zk2F+shuJ7Bs4VGVYk=
 github.com/ipthomas/tukpdq v1.3.16/go.mod h1:vjUS2G36oIMb5CyaN8Tze99TtjYcWV8JZ4EMXdbp0uY=
 github.com/ipthomas/tukpdq v1.3.17 h1:1WKRRb7vdBXeijnqWoddNAILlMjHR+VyqXu77uQvYVg=
@@ -28,5 +32,9 @@ github.com/ipthomas/tukpdq v1.3.18 h1:iolAmjlLz5dXqtcf5cx//MhD7ksdvsEEwAXOr58Lqi
 github.com/ipthomas/tukpdq v1.3.18/go.mod h1:Coudvtgd1NewLurK4HyisFTXKcWB07D9n5cmBtgM+6w=
 github.com/ipthomas/tukpdq v1.3.19 h1:eAxMZT82MpiQLVTmP7rFCHyQWAIXBt8ROdqbhmYhHVk=
 github.com/ipthomas/tukpdq v1.3.19/go.mod h1:kjn92F2ReDZMIjr4G8YJoEvDBXZHh4gJk8MXPqBA6ZM=
+github.com/ipthomas/tukpdq v1.3.20 h1:Kv7IYezL3bwP5LuzDoa8wrKeA4AYuuckQH+zCeeDRMM=
+github.com/ipthomas/tukpdq v1.3.20/go.mod h1:dkeq2d6ukK6VcVpGN3jQKK8j+XGXBOVSel1+no0r2vw=
 github.com/ipthomas/tukutil v1.3.12 h1:xAc9ZTkNxesJBLa9BhfcH3kDuYIFVJdsqLXgJXqTc64=
 github.com/ipthomas/tukutil v1.3.12/go.mod h1:Fkq7opgHHFl3B9pU8aA+wnjiWdk5+6yulLb2sU4h8OA=
+github.com/ipthomas/tukutil v1.3.13 h1:3EgRatbdC3YNehJamYbx5dIxUl/RrsUnPzAImFhHsZo=
+github.com/ipthomas/tukutil v1.3.13/go.mod h1:8d/mKzuW2N/qeKFqA4YEYCSprlWu0zhltRx23QwmGQI=
