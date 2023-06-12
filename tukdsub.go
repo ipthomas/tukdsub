@@ -193,9 +193,6 @@ func (i *DSUBEvent) newEvent() error {
 	}
 	return err
 }
-func SetDebug(isdebug bool) {
-	isdebugMode = isdebug
-}
 
 // creates a DSUBNotifyMessage from the EventMessage and populates a new TUKEvent with the DSUBNotifyMessage values
 // It then checks for TukDB Subscriptions matching the brokerref and creates a TUKEvent for each subscription
