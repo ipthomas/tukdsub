@@ -1,24 +1,19 @@
 package tukdbint
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/ipthomas/tukcnst"
-
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/ipthomas/tukcnst"
 )
 
 var (
-	DB_URL = ""
 	DBConn *sql.DB
 )
 
@@ -31,7 +26,7 @@ type TukDBConnection struct {
 	DBTimeout     string
 	DBReadTimeout string
 	DB_URL        string
-	DBReader_Only bool
+	DEBUG_MODE    bool
 }
 type Statics struct {
 	Action       string   `json:"action"`
@@ -43,17 +38,6 @@ type Static struct {
 	Id      int64  `json:"id"`
 	Name    string `json:"name"`
 	Content string `json:"content"`
-}
-type ServiceStates struct {
-	Action       string         `json:"action"`
-	LastInsertId int64          `json:"lastinsertid"`
-	Count        int            `json:"count"`
-	ServiceState []ServiceState `json:"servicestate"`
-}
-type ServiceState struct {
-	Id      int64  `json:"id"`
-	Name    string `json:"name"`
-	Service string `json:"service"`
 }
 type Templates struct {
 	Action       string     `json:"action"`
@@ -231,57 +215,6 @@ func (e WorkflowsList) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
 
-var debugMode bool
-var idmapsCache = []IdMap{}
-
-func SetDebugMode(debug bool) {
-	debugMode = debug
-}
-func (i *TukDBConnection) InitialiseDatabase(mysqlFile string) error {
-	if DBConn != nil {
-		DBConn.Close()
-	}
-	var err error
-	i.setDBCredentials()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/",
-		i.DBUser,
-		i.DBPassword,
-		i.DBHost+i.DBPort)
-	log.Printf("Opening DB Connection to mysql instance via DSN - %s", dsn)
-	DBConn, err = sql.Open(tukcnst.MYSQL, dsn)
-	if err != nil {
-		log.Printf("Error %s when Opening DB Connection\n", err)
-		return err
-	}
-	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelfunc()
-	_, err = DBConn.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+i.DBName)
-	DBConn.Close()
-	if err != nil {
-		log.Printf("Error %s when Opening DB Connection\n", err)
-		return err
-	}
-	return i.InitialiseDBTables(mysqlFile)
-}
-func (i *TukDBConnection) InitialiseDBTables(mysqlFile string) error {
-	cmd := exec.Command("/usr/local/bin/mysql", "-h"+i.DBHost, "-P"+strings.TrimPrefix(i.DBPort, ":"),
-		"-u"+i.DBUser, "-p"+i.DBPassword, "-D"+i.DBName)
-	dump, dump_err := os.Open(mysqlFile)
-	if dump_err != nil {
-		return dump_err
-	}
-	cmd.Stdin = dump
-	var out, stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Error executing query. Command Output: %+v\n: %+v, %v", out.String(), stderr.String(), err)
-		return err
-	}
-	return nil
-}
-
 type TUK_DB_Interface interface {
 	newEvent() error
 }
@@ -289,28 +222,24 @@ type TUK_DB_Interface interface {
 func NewDBEvent(i TUK_DB_Interface) error {
 	return i.newEvent()
 }
-
+func CloseDBConnection() {
+	DBConn.Close()
+}
 func (i *TukDBConnection) newEvent() error {
 	var err error
-	if i.DB_URL != "" {
-		log.Printf("Database API URL provided. Will connect to mysql instance via AWS API Gateway url %s", i.DB_URL)
-		DB_URL = i.DB_URL
-	} else {
-		i.setDBCredentials()
-		if i.DBName == "" {
-			i.DBName = "tuk"
-		}
-		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&timeout=%s&readTimeout=%s",
-			i.DBUser,
-			i.DBPassword,
-			i.DBHost+i.DBPort,
-			i.DBName,
-			i.DBTimeout,
-			i.DBReadTimeout)
-		log.Println("No Database API URL provided. Opening DB Connection to mysql instance via DSN")
-		DBConn, err = sql.Open(tukcnst.MYSQL, dsn)
+	i.setDBCredentials()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&timeout=%s&readTimeout=%s",
+		i.DBUser,
+		i.DBPassword,
+		i.DBHost+i.DBPort,
+		i.DBName,
+		i.DBTimeout,
+		i.DBReadTimeout)
+	log.Printf("Opening DB Connection to mysql instance User: %s Host: %s Port: %s Name: %s", i.DBUser, i.DBHost, i.DBPort, i.DBName)
+	DBConn, err = sql.Open("mysql", dsn)
+	if err == nil {
+		log.Println("Opened Database")
 	}
-
 	return err
 }
 
@@ -324,22 +253,26 @@ func (i *TukDBConnection) setDBCredentials() {
 	if i.DBHost == "" {
 		i.DBHost = "localhost"
 	}
+	if i.DBPort == "" {
+		i.DBPort = "3306"
+	}
 	if !strings.HasPrefix(i.DBPort, ":") {
 		i.DBPort = ":" + i.DBPort
 	}
+	if i.DBName == "" {
+		i.DBName = "tuk"
+	}
 	if i.DBTimeout == "" {
-		i.DBTimeout = "5s"
-	} else {
-		if !strings.HasSuffix(i.DBTimeout, "s") {
-			i.DBTimeout = i.DBTimeout + "s"
-		}
+		i.DBTimeout = "5"
+	}
+	if !strings.HasSuffix(i.DBTimeout, "s") {
+		i.DBTimeout = i.DBTimeout + "s"
 	}
 	if i.DBReadTimeout == "" {
-		i.DBReadTimeout = "2s"
-	} else {
-		if !strings.HasSuffix(i.DBReadTimeout, "s") {
-			i.DBReadTimeout = i.DBReadTimeout + "s"
-		}
+		i.DBReadTimeout = "5"
+	}
+	if !strings.HasSuffix(i.DBReadTimeout, "s") {
+		i.DBReadTimeout = i.DBReadTimeout + "s"
 	}
 }
 func GetSubscriptions(brokerref string, pathway string, expression string) Subscriptions {
@@ -581,9 +514,7 @@ func GetWorkflowDefinitionNames(user string) map[string]string {
 			}
 		}
 	}
-	if debugMode {
-		log.Printf("Returning %v XDW Definition Names", len(names))
-	}
+	log.Printf("Returning %v XDW Definition Names", len(names))
 	return names
 }
 func GetWorkflowXDSMetaNames() []string {
@@ -598,9 +529,7 @@ func GetWorkflowXDSMetaNames() []string {
 			}
 		}
 	}
-	if debugMode {
-		log.Printf("Returning %v XDS Meta files", len(xdwdefs))
-	}
+	log.Printf("Returning %v XDS Meta files", len(xdwdefs))
 	return xdwdefs
 }
 func GetWorkflowDefinitions() (XDWS, error) {
@@ -748,24 +677,17 @@ func (i *Templates) newEvent() error {
 	}
 	return err
 }
-func cachIDMaps(user string) {
+func GetIDMapsMappedId(user string, localid string) string {
+	if user == "" {
+		user = "system"
+	}
 	idmaps := IdMaps{Action: tukcnst.SELECT}
 	idmap := IdMap{User: user}
 	idmaps.LidMap = append(idmaps.LidMap, idmap)
 	if err := idmaps.newEvent(); err != nil {
 		log.Println(err.Error())
 	}
-	idmapsCache = idmaps.LidMap
-	log.Printf("Total CodeMaps: %v", len(idmapsCache))
-}
-func GetIDMapsMappedId(user string, localid string) string {
-	if len(idmapsCache) == 0 {
-		cachIDMaps(user)
-	}
-	if user == "" {
-		user = "system"
-	}
-	for _, idmap := range idmapsCache {
+	for _, idmap := range idmaps.LidMap {
 		if idmap.Lid == localid && idmap.User == user {
 			return idmap.Mid
 		}
@@ -776,11 +698,13 @@ func GetIDMapsLocalId(user string, mid string) string {
 	if user == "" {
 		user = "system"
 	}
-	if len(idmapsCache) == 0 {
-		cachIDMaps(user)
+	idmaps := IdMaps{Action: tukcnst.SELECT}
+	idmap := IdMap{User: user}
+	idmaps.LidMap = append(idmaps.LidMap, idmap)
+	if err := idmaps.newEvent(); err != nil {
+		log.Println(err.Error())
 	}
-
-	for _, idmap := range idmapsCache {
+	for _, idmap := range idmaps.LidMap {
 		if idmap.Mid == mid && idmap.User == user {
 			return idmap.Lid
 		}
@@ -832,75 +756,7 @@ func (i *IdMaps) newEvent() error {
 	}
 	return err
 }
-func GetServiceState(servicename string) (ServiceState, error) {
-	var err error
-	if !strings.HasSuffix(servicename, "srvc") {
-		servicename = servicename + "srvc"
-	}
-	srvcs := ServiceStates{Action: tukcnst.SELECT}
-	srvc := ServiceState{Name: servicename}
-	srvcs.ServiceState = append(srvcs.ServiceState, srvc)
-	err = NewDBEvent(&srvcs)
-	if err == nil && srvcs.Count == 1 {
-		return srvcs.ServiceState[1], nil
-	}
-	return srvc, err
-}
-func SetServiceState(servicename string, state string) error {
-	srvcs := ServiceStates{Action: tukcnst.DELETE}
-	srvc := ServiceState{Name: servicename}
-	srvcs.ServiceState = append(srvcs.ServiceState, srvc)
-	srvcs.newEvent()
-	srvcs = ServiceStates{Action: tukcnst.INSERT}
-	srvc = ServiceState{Name: servicename, Service: state}
-	srvcs.ServiceState = append(srvcs.ServiceState, srvc)
-	return srvcs.newEvent()
-}
-func (i *ServiceStates) newEvent() error {
-	var err error
-	var stmntStr = tukcnst.SQL_DEFAULT_SERVICESTATES
-	var rows *sql.Rows
-	var vals []interface{}
-	ctx, cancelCtx := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancelCtx()
-	if len(i.ServiceState) > 0 {
-		if stmntStr, vals, err = createPreparedStmnt(i.Action, tukcnst.SERVICE_STATES, reflectStruct(reflect.ValueOf(i.ServiceState[0]))); err != nil {
-			log.Println(err.Error())
-			return err
-		}
-	}
-	sqlStmnt, err := DBConn.PrepareContext(ctx, stmntStr)
-	if err != nil {
-		log.Println(err.Error())
-		return err
-	}
-	defer sqlStmnt.Close()
 
-	if i.Action == tukcnst.SELECT {
-		rows, err = setRows(ctx, sqlStmnt, vals)
-		if err != nil {
-			log.Println(err.Error())
-			return err
-		}
-		for rows.Next() {
-			srvc := ServiceState{}
-			if err := rows.Scan(&srvc.Id, &srvc.Name, &srvc.Service); err != nil {
-				switch {
-				case err == sql.ErrNoRows:
-					return nil
-				default:
-					log.Println(err.Error())
-					return err
-				}
-			}
-			i.ServiceState = append(i.ServiceState, srvc)
-			i.Count = i.Count + 1
-		}
-	} else {
-		i.LastInsertId, err = setLastID(ctx, sqlStmnt, vals)
-	}
-	return err
-}
 func (i *Statics) newEvent() error {
 	var err error
 	var stmntStr = tukcnst.SQL_DEFAULT_STATICS
@@ -958,9 +814,7 @@ func GetTaskNotes(pwy string, nhsid string, taskid int, ver int) string {
 				notes = notes + note.Comments + "\n"
 			}
 		}
-		if debugMode {
-			log.Printf("Found TaskId %v Notes %s", taskid, notes)
-		}
+		log.Printf("Found TaskId %v Notes %s", taskid, notes)
 	}
 	return notes
 }
@@ -982,9 +836,14 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), tint)
 				}
 			} else {
-				if i.Field(f).Interface() != nil && len(i.Field(f).Interface().(string)) > 0 {
+				if strings.EqualFold(structType.Field(f).Name, "isxml") || strings.EqualFold(structType.Field(f).Name, "published") || strings.EqualFold(structType.Field(f).Name, "isxdsmeta") {
 					params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
 					log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
+				} else {
+					if i.Field(f).Interface() != nil && len(i.Field(f).Interface().(string)) > 0 {
+						params[strings.ToLower(structType.Field(f).Name)] = i.Field(f).Interface()
+						log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface())
+					}
 				}
 			}
 		}

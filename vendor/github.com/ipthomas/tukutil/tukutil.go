@@ -18,9 +18,8 @@ import (
 
 	"encoding/base64"
 
-	"github.com/ipthomas/tukcnst"
-
 	"github.com/google/uuid"
+	"github.com/ipthomas/tukcnst"
 )
 
 var (
@@ -38,7 +37,7 @@ func SetDebugMode(debug bool) {
 	debugMode = debug
 }
 
-// TemplateFuncMap returns a functionMap of tukutils for use in templates
+// TemplateFuncMap returns a functionMap of ttutils for use in templates
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"dtday":          Tuk_Day,
@@ -124,21 +123,31 @@ func GetCodeSystemVal(key string) string {
 // CreateLog checks if the log folder exists and creates it if not. It then checks for a subfolder for the current year i.e. 2022 and creates it if it does not exist. It then checks for a log file with a name equal to the current day and month and extension .log i.e. 0905.log. If it exists log output is appended to the existing file otherwise a new log file is created.
 func CreateLog(log_Folder string) *os.File {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
-	mdir := log_Folder
-	if _, err := os.Stat(mdir); errors.Is(err, fs.ErrNotExist) {
-		if e2 := os.Mkdir(mdir, 0700); e2 != nil {
+	if _, err := os.Stat(log_Folder); errors.Is(err, fs.ErrNotExist) {
+		if e2 := os.Mkdir(log_Folder, 0700); e2 != nil {
 			log.Println(err.Error())
 			return nil
 		}
 	}
-	dir := mdir + "/" + Tuk_Year()
-	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		if e2 := os.Mkdir(dir, 0700); e2 != nil {
+	if _, err := os.Stat(log_Folder + "/" + Tuk_Year()); errors.Is(err, fs.ErrNotExist) {
+		if e2 := os.Mkdir(log_Folder+"/"+Tuk_Year(), 0700); e2 != nil {
 			log.Println(err.Error())
 			return nil
 		}
 	}
-	logFile, err := os.OpenFile(dir+"/"+Tuk_Month()+Tuk_Day()+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if _, err := os.Stat(log_Folder + "/" + Tuk_Year() + "/" + Tuk_Month()); errors.Is(err, fs.ErrNotExist) {
+		if e2 := os.Mkdir(log_Folder+"/"+Tuk_Year()+"/"+Tuk_Month(), 0700); e2 != nil {
+			log.Println(err.Error())
+			return nil
+		}
+	}
+	if _, err := os.Stat(log_Folder + "/" + Tuk_Year() + "/" + Tuk_Month() + "/" + Tuk_Day()); errors.Is(err, fs.ErrNotExist) {
+		if e2 := os.Mkdir(log_Folder+"/"+Tuk_Year()+"/"+Tuk_Month()+"/"+Tuk_Day(), 0700); e2 != nil {
+			log.Println(err.Error())
+			return nil
+		}
+	}
+	logFile, err := os.OpenFile(log_Folder+"/"+Tuk_Year()+"/"+Tuk_Month()+"/"+Tuk_Day()+"/"+Tuk_Hour()+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println(err.Error())
 		return nil

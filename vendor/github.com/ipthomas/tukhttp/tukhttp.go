@@ -53,21 +53,15 @@ func (i *HTTPRequest) newRequest() error {
 	if i.Timeout == 0 {
 		i.Timeout = 15
 	}
-	if i.Server == "pixm" && i.Method == http.MethodGet {
-		i.URL = i.URL + "?identifier=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
-	}
-	if i.Server == "mhd" && i.Method == http.MethodGet {
-		i.URL = i.URL + "?patient.identifier=urn:oid:=" + i.PID_OID + "|" + i.PID + tukcnst.FORMAT_JSON_PRETTY
-	}
 	i.logReq(header, i.URL, string(i.Body))
-	if i.StatusCode, i.Response, err = i.sendHttpRequest(header); err != nil {
+	if err = i.sendHttpRequest(header); err != nil {
 		log.Println(err.Error())
 	}
 	i.logRsp(i.StatusCode, string(i.Response))
 	return err
 
 }
-func (i *HTTPRequest) sendHttpRequest(header http.Header) (int, []byte, error) {
+func (i *HTTPRequest) sendHttpRequest(header http.Header) error {
 	var err error
 	var req *http.Request
 	var rsp *http.Response
@@ -84,11 +78,12 @@ func (i *HTTPRequest) sendHttpRequest(header http.Header) (int, []byte, error) {
 		if rsp, err = http.DefaultClient.Do(req.WithContext(ctx)); err == nil {
 			defer rsp.Body.Close()
 			if bytes, err = io.ReadAll(rsp.Body); err == nil {
-				return rsp.StatusCode, bytes, err
+				i.StatusCode = rsp.StatusCode
+				i.Response = bytes
 			}
 		}
 	}
-	return rsp.StatusCode, bytes, err
+	return err
 }
 func (i *HTTPRequest) logReq(headers interface{}, url string, body string) {
 	if i.DebugMode {

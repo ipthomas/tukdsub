@@ -1017,9 +1017,7 @@ func (i *PDQQuery) setPatient() error {
 		httpReq := tukhttp.HTTPRequest{
 			Server:  tukcnst.PDQ_SERVER_TYPE_IHE_PIXM,
 			Method:  http.MethodGet,
-			URL:     i.Server_URL,
-			PID_OID: i.Used_PID_OID,
-			PID:     i.Used_PID,
+			URL:     i.Server_URL + "?identifier=" + i.Used_PID_OID + "|" + i.Used_PID + tukcnst.FORMAT_JSON_PRETTY,
 			Timeout: i.Timeout,
 		}
 		err = tukhttp.NewRequest(&httpReq)
