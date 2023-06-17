@@ -395,7 +395,7 @@ func GetPathwayWorkflows(pathway string) Workflows {
 }
 func GetActiveWorkflowNames() map[string]string {
 	var activewfs = make(map[string]string)
-	wfs := GetWorkflows("", "", "", "", -1, false, tukcnst.TUK_STATUS_OPEN)
+	wfs := GetWorkflows("", "", "", "", -1, false, tukcnst.STATUS_OPEN)
 	log.Printf("Open Workflow Count %v", wfs.Count)
 	for _, v := range wfs.Workflows {
 		if v.Id != 0 {
