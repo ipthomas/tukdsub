@@ -3,6 +3,7 @@ package tukdbint
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -50,6 +51,7 @@ type Template struct {
 	Name     string `json:"name"`
 	IsXML    bool   `json:"isxml"`
 	Template string `json:"template"`
+	User     string `json:"user"`
 }
 type Subscription struct {
 	Id         int64  `json:"id"`
@@ -223,7 +225,9 @@ func NewDBEvent(i TUK_DB_Interface) error {
 	return i.newEvent()
 }
 func CloseDBConnection() {
-	DBConn.Close()
+	if DBConn != nil {
+		DBConn.Close()
+	}
 }
 func (i *TukDBConnection) newEvent() error {
 	var err error
@@ -529,7 +533,7 @@ func GetWorkflowXDSMetaNames() []string {
 			}
 		}
 	}
-	log.Printf("Returning %v XDS Meta files", len(xdwdefs))
+	log.Printf("Returning %v XDW Meta file names", len(xdwdefs))
 	return xdwdefs
 }
 func GetWorkflowDefinitions() (XDWS, error) {
@@ -542,8 +546,12 @@ func GetWorkflowDefinition(name string) (XDW, error) {
 	xdws := XDWS{Action: tukcnst.SELECT}
 	xdw := XDW{Name: name}
 	xdws.XDW = append(xdws.XDW, xdw)
-	if err = xdws.newEvent(); err == nil && xdws.Count == 1 {
-		return xdws.XDW[1], nil
+	if err = xdws.newEvent(); err == nil {
+		if xdws.Count == 1 {
+			return xdws.XDW[1], nil
+		} else {
+			return xdw, errors.New("no xdw registered for " + name)
+		}
 	}
 	return xdw, err
 }
@@ -552,12 +560,17 @@ func GetWorkflowXDSMeta(name string) (XDW, error) {
 	xdws := XDWS{Action: tukcnst.SELECT}
 	xdw := XDW{Name: name, IsXDSMeta: true}
 	xdws.XDW = append(xdws.XDW, xdw)
-	if err = xdws.newEvent(); err == nil && xdws.Count == 1 {
-		return xdws.XDW[1], nil
+	if err = xdws.newEvent(); err == nil {
+		if xdws.Count == 1 {
+			return xdws.XDW[1], nil
+		} else {
+			return xdw, errors.New("no xdw meta registered for " + name)
+		}
 	}
 	return xdw, err
 }
-func SetWorkflowDefinition(name string, config string, isxdsmeta bool) error {
+
+func PersistWorkflowDefinition(name string, config string, isxdsmeta bool) error {
 	xdws := XDWS{Action: tukcnst.DELETE}
 	xdw := XDW{Name: name, IsXDSMeta: isxdsmeta}
 	xdws.XDW = append(xdws.XDW, xdw)
@@ -622,7 +635,7 @@ func GetTemplate(templatename string, isxml bool) (Template, error) {
 	}
 	return tmplt, err
 }
-func SetTemplate(templatename string, isxml bool, templatestr string) error {
+func PersistTemplate(templatename string, isxml bool, templatestr string) error {
 	tmplts := Templates{Action: tukcnst.DELETE}
 	tmplt := Template{Name: templatename, IsXML: isxml}
 	tmplts.Templates = append(tmplts.Templates, tmplt)
@@ -660,7 +673,7 @@ func (i *Templates) newEvent() error {
 		}
 		for rows.Next() {
 			tmplt := Template{}
-			if err := rows.Scan(&tmplt.Id, &tmplt.Name, &tmplt.IsXML, &tmplt.Template); err != nil {
+			if err := rows.Scan(&tmplt.Id, &tmplt.Name, &tmplt.IsXML, &tmplt.Template, &tmplt.User); err != nil {
 				switch {
 				case err == sql.ErrNoRows:
 					return nil
@@ -822,6 +835,44 @@ func reflectStruct(i reflect.Value) map[string]interface{} {
 	params := make(map[string]interface{})
 	structType := i.Type()
 	for f := 0; f < i.NumField(); f++ {
+		// field := structType.Field(f)
+		// fieldName := field.Name
+		// fieldType := field.Type
+		// switch fieldType.Kind() {
+		// case reflect.Int64:
+		// 	log.Printf("Field %s is of type int64\n", fieldName)
+		// 	val := i.Field(f).Interface().(int64)
+		// 	if val > 0 {
+		// 		params[strings.ToLower(structType.Field(f).Name)] = val
+		// 		log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), val)
+		// 	}
+		// case reflect.Int:
+		// 	log.Printf("Field %s is of type int\n", fieldName)
+		// 	val := i.Field(f).Interface().(int)
+		// 	if val != -1 {
+		// 		params[strings.ToLower(structType.Field(f).Name)] = val
+		// 		log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), val)
+		// 	}
+		// case reflect.Bool:
+		// 	log.Printf("Field %s is of type bool\n", fieldName)
+		// 	val := i.Field(f).Interface().(bool)
+		// 	params[strings.ToLower(structType.Field(f).Name)] = val
+		// 	log.Printf("Reflected param %s : value %v", strings.ToLower(structType.Field(f).Name), val)
+		// case reflect.String:
+		// 	log.Printf("Field %s is of type string\n", fieldName)
+		// 	val := i.Field(f).Interface().(string)
+		// 	if len(val) > 0 {
+		// 		params[strings.ToLower(structType.Field(f).Name)] = val
+		// 		if len(i.Field(f).Interface().(string)) > 100 {
+		// 			log.Printf("Reflected param %s : Truncated value %v", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface().(string)[0:100])
+		// 		} else {
+		// 			log.Printf("Reflected param %s : value %s", strings.ToLower(structType.Field(f).Name), i.Field(f).Interface().(string))
+		// 		}
+		// 	}
+		// default:
+		// 	log.Printf("Field %s has an unknown type %v\n", fieldName, fieldType.Kind())
+		// }
+
 		if strings.EqualFold(structType.Field(f).Name, "Id") || strings.EqualFold(structType.Field(f).Name, "EventID") || strings.EqualFold(structType.Field(f).Name, "LastInsertId") || strings.EqualFold(structType.Field(f).Name, "WorkflowId") {
 			tint64 := i.Field(f).Interface().(int64)
 			if tint64 > 0 {

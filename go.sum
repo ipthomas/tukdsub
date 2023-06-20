@@ -12,6 +12,8 @@ github.com/ipthomas/tukdbint v1.3.65 h1:klZW0Xc5QFRqNikkVCTjS5NgFVzLif1wVGxxsbqj
 github.com/ipthomas/tukdbint v1.3.65/go.mod h1:bp5NShqCZ2OAjc5z9G7NUZksEA5qJZ2yRVmSikjJo1s=
 github.com/ipthomas/tukdbint v1.3.66 h1:fT+toSFIxeB4PWTdTy9Yf5WHQ67njkje6IWVpqKUrxw=
 github.com/ipthomas/tukdbint v1.3.66/go.mod h1:bp5NShqCZ2OAjc5z9G7NUZksEA5qJZ2yRVmSikjJo1s=
+github.com/ipthomas/tukdbint v1.3.67 h1:p0YtQULIrrK5+Z7T09VYUlGvJ88QjXwIgKL2zTz6mo4=
+github.com/ipthomas/tukdbint v1.3.67/go.mod h1:bp5NShqCZ2OAjc5z9G7NUZksEA5qJZ2yRVmSikjJo1s=
 github.com/ipthomas/tukhttp v1.3.22 h1:MQWrHhyS6EJJujVY1KAIIhdxYk6lz2sRR9a9SRqaGoQ=
 github.com/ipthomas/tukhttp v1.3.22/go.mod h1:4Jpu98WCu90iubacrsio3RNdRWWgUUpXXBBF6ei78ig=
 github.com/ipthomas/tukhttp v1.3.23 h1:V07LQmi2L10aQq4crsHmtyNesg6osTtC3UgSVexg9Ig=
